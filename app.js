@@ -1,6 +1,6 @@
 /**
  * Scout PWA - app.js
- * v8: Robust Error Handling & Vercel Proxy.
+ * v9: Unmasking [object Object] Errors.
  */
 
 const SYSTEM_PROMPT = `You are a senior operator and cynical venture investor. You provide blunt, deep, high-conviction teardowns using a first-principles mechanism.
@@ -55,12 +55,13 @@ async function callProxy(action, body) {
     const data = await response.json();
     
     if (!response.ok) {
-      throw new Error(data.error || `Proxy Error: ${response.status}`);
+      // Ensure error is a string even if it's an object
+      const errorMsg = typeof data.error === 'object' ? JSON.stringify(data.error) : (data.error || `Error ${response.status}`);
+      throw new Error(errorMsg);
     }
     
-    // Check for Groq-specific errors wrapped in 200
     if (action === 'analyse' && data.error) {
-      throw new Error(`AI Error: ${data.error.message || JSON.stringify(data.error)}`);
+      throw new Error(JSON.stringify(data.error));
     }
 
     return data;
