@@ -201,11 +201,11 @@ async function performAnalysis(company, context) {
     return;
   }
 
-  elements.loadingCompanyName.textContent = \`Researching \${company}...\`;
+  elements.loadingCompanyName.textContent = `Researching ${company}...`;
   showView('loading');
 
   try {
-    const response = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\${API_KEY}\`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -215,7 +215,7 @@ async function performAnalysis(company, context) {
       })
     });
 
-    if (!response.ok) throw new Error(\`API Error: \${response.status}\`);
+    if (!response.ok) throw new Error(`API Error: ${response.status}`);
 
     const data = await response.json();
     const resultText = data.candidates[0].content.parts[0].text;
@@ -271,27 +271,27 @@ function renderReport(data) {
   const verdictClass = tldr.verdict.toLowerCase().includes('back') ? 'back' : 
                        tldr.verdict.toLowerCase().includes('pass') ? 'pass' : 'interesting';
   
-  tldrEl.className = \`card tldr-card \${verdictClass}\`;
-  tldrEl.innerHTML = \`
+  tldrEl.className = `card tldr-card ${verdictClass}`;
+  tldrEl.innerHTML = `
     <div class="tldr-header">
       <div class="tldr-title">
-        <h2>\${data.company}</h2>
-        <p>\${data.tagline}</p>
+        <h2>${data.company}</h2>
+        <p>${data.tagline}</p>
       </div>
-      <div class="pill \${verdictClass}">\${tldr.verdict}</div>
+      <div class="pill ${verdictClass}">${tldr.verdict}</div>
     </div>
-    <div class="verdict-reason">\${tldr.verdict_reason}</div>
+    <div class="verdict-reason">${tldr.verdict_reason}</div>
     <div class="columns">
       <div class="col">
         <h4>Strengths</h4>
-        <ul>\${tldr.strengths.map(s => \`<li><span class="icon-check">✓</span> \${s}</li>\`).join('')}</ul>
+        <ul>${tldr.strengths.map(s => `<li><span class="icon-check">✓</span> ${s}</li>`).join('')}</ul>
       </div>
       <div class="col">
         <h4>Risks</h4>
-        <ul>\${tldr.risks.map(r => \`<li><span class="icon-risk">!</span> \${r}</li>\`).join('')}</ul>
+        <ul>${tldr.risks.map(r => `<li><span class="icon-risk">!</span> ${r}</li>`).join('')}</ul>
       </div>
     </div>
-  \`;
+  `;
   elements.reportContainer.appendChild(tldrEl);
 
   // 2. Section Cards Grid
@@ -307,43 +307,43 @@ function renderReport(data) {
     if (section.status === 'weak') badge = '⚠️ Weak';
     if (section.status === 'wrong') badge = '❌ Problem';
 
-    let contentHTML = \`<p class="finding">\${section.finding}</p>\`;
+    let contentHTML = `<p class="finding">${section.finding}</p>`;
 
     if (section.id === 'real_problem_stack' && section.problems) {
-      contentHTML += \`<ol class="problems-list">\${section.problems.map(p => \`<li>\${p}</li>\`).join('')}</ol>\`;
+      contentHTML += `<ol class="problems-list">${section.problems.map(p => `<li>${p}</li>`).join('')}</ol>`;
     }
 
     if (section.id === 'market_size') {
-      contentHTML = \`
-        <div class="number-callout">\${data.sections.find(s => s.id === 'market_size').number || '—'}</div>
-        <p class="number-note">\${data.sections.find(s => s.id === 'market_size').number_note || ''}</p>
-        \${contentHTML}
-      \`;
+      contentHTML = `
+        <div class="number-callout">${data.sections.find(s => s.id === 'market_size').number || '—'}</div>
+        <p class="number-note">${data.sections.find(s => s.id === 'market_size').number_note || ''}</p>
+        ${contentHTML}
+      `;
     }
 
     if (section.id === 'defensibility' && section.scorecard) {
-      contentHTML += \`
+      contentHTML += `
         <table class="scorecard-table">
           <thead><tr><th>Dimension</th><th>Strength</th></tr></thead>
           <tbody>
-            \${section.scorecard.map(row => \`
+            ${section.scorecard.map(row => `
               <tr>
-                <td>\${row.dimension}</td>
-                <td><span class="dot \${row.strength}"></span> \${row.strength}</td>
+                <td>${row.dimension}</td>
+                <td><span class="dot ${row.strength}"></span> ${row.strength}</td>
               </tr>
-            \`).join('')}
+            `).join('')}
           </tbody>
         </table>
-      \`;
+      `;
     }
 
-    card.innerHTML = \`
+    card.innerHTML = `
       <div class="card-header">
-        <h3>\${section.title}</h3>
-        <span class="status-badge">\${badge}</span>
+        <h3>${section.title}</h3>
+        <span class="status-badge">${badge}</span>
       </div>
-      \${contentHTML}
-    \`;
+      ${contentHTML}
+    `;
     grid.appendChild(card);
   });
 
@@ -353,29 +353,29 @@ function renderReport(data) {
   if (data.gaps_table && data.gaps_table.length > 0) {
     const gapsEl = document.createElement('div');
     gapsEl.className = 'gaps-section';
-    gapsEl.innerHTML = \`
+    gapsEl.innerHTML = `
       <h2>Gaps & Fixes</h2>
       <table class="gaps-table">
         <thead><tr><th>Gap</th><th>Right Fix</th></tr></thead>
         <tbody>
-          \${data.gaps_table.map(row => \`
+          ${data.gaps_table.map(row => `
             <tr>
-              <td>\${row.gap}</td>
-              <td>\${row.fix}</td>
+              <td>${row.gap}</td>
+              <td>${row.fix}</td>
             </tr>
-          \`).join('')}
+          `).join('')}
         </tbody>
       </table>
-    \`;
+    `;
     elements.reportContainer.appendChild(gapsEl);
   }
 
   // 4. Overall Verdict
   const overallEl = document.createElement('div');
   overallEl.className = 'overall-section';
-  overallEl.innerHTML = \`
-    <div class="overall-text">\${data.overall_verdict}</div>
-  \`;
+  overallEl.innerHTML = `
+    <div class="overall-text">${data.overall_verdict}</div>
+  `;
   elements.reportContainer.appendChild(overallEl);
   
   // Stagger animations
