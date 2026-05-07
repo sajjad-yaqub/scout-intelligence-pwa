@@ -1,12 +1,7 @@
 /**
  * Scout PWA - app.js
- * v6: Optimized Two-Stage Agentic Research.
- * Stage 1: Build robust base context.
- * Stage 2: Consolidated deep-hunt for first-principles evidence.
+ * v7: Vercel Backend Integration (Bypasses CORS).
  */
-
-const GROQ_KEY = 'YOUR_GROQ_API_KEY';
-const TAVILY_KEY = 'YOUR_TAVILY_API_KEY';
 
 const SYSTEM_PROMPT = `You are a senior operator and cynical venture investor. You provide blunt, deep, high-conviction teardowns using a first-principles mechanism.
 
@@ -47,6 +42,20 @@ JSON Schema:
   "gaps_table": [{ "gap": "string", "fix": "string" }],
   "overall_verdict": "string"
 }`;
+
+// Helper: Call Vercel Proxy
+async function callProxy(action, body) {
+  const response = await fetch('/api/scout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, body })
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Proxy Error');
+  }
+  return response.json();
+}
 
 // DOM Elements
 const views = {
@@ -130,19 +139,13 @@ async function startResearchFlow(company, context) {
   showView('loading');
 
   try {
-    const response = await fetch('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: TAVILY_KEY,
-        query: `${company} company details overview`,
-        search_depth: "basic",
-        max_results: 5
-      })
+    const searchData = await callProxy('search', {
+      query: `${company} company details overview`,
+      search_depth: "basic",
+      max_results: 5
     });
     
-    const searchResults = await response.json();
-    lastSearchResults = searchResults.results || [];
+    lastSearchResults = searchData.results || [];
     renderDisambiguation(company, lastSearchResults, context);
     showView('disambiguation');
 
@@ -186,71 +189,50 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
   if (selectedIndex !== -1) baseContext += `Main Selection: ${lastSearchResults[selectedIndex].content}\n`;
   
   try {
-    const baseSearch = await fetch('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: TAVILY_KEY,
-        query: `${query} company business model product features operations history`,
-        search_depth: "advanced",
-        max_results: 6
-      })
+    const baseData = await callProxy('search', {
+      query: `${query} company business model product features operations history`,
+      search_depth: "advanced",
+      max_results: 6
     });
-    const baseData = await baseSearch.json();
     baseContext += (baseData.results || []).map(r => r.content).join('\n\n');
 
     // Stage 2: Unified Deep Hunt
     updateLoadingStep('Consolidating deep-hunt queries...');
-    const huntQueryResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: "You are a senior analyst. Based on this context, generate ONE highly targeted search query to find the 'Missing Deep Pillars': Unit Economics specifics, evidence of Flywheels, and the Psychological Hook/Functional needs. Output ONLY the query string." },
-          { role: "user", content: baseContext.substring(0, 8000) }
-        ]
-      })
+    const huntQueryResponse = await callProxy('analyse', {
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: "You are a senior analyst. Based on this context, generate ONE highly targeted search query to find the 'Missing Deep Pillars': Unit Economics specifics, evidence of Flywheels, and the Psychological Hook/Functional needs. Output ONLY the query string." },
+        { role: "user", content: baseContext.substring(0, 8000) }
+      ]
     });
-    const huntQueryResponseData = await huntQueryResponse.json();
+    const huntQueryResponseData = await huntQueryResponse;
     const targetedQuery = huntQueryResponseData.choices[0].message.content.trim().replace(/^"|"$/g, '');
 
     updateLoadingStep(`Hunting for: ${targetedQuery.toLowerCase().substring(0, 40)}...`);
-    const deepHunt = await fetch('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: TAVILY_KEY,
-        query: `${query} ${targetedQuery}`,
-        search_depth: "advanced",
-        max_results: 8
-      })
+    const huntData = await callProxy('search', {
+      query: `${query} ${targetedQuery}`,
+      search_depth: "advanced",
+      max_results: 8
     });
-    const huntData = await deepHunt.json();
     
-    // Combine & Truncate to avoid overload (safe limit ~20k chars)
+    // Combine & Truncate to avoid overload
     let finalContext = "DEEP HUNT EVIDENCE:\n" + (huntData.results || []).map(r => r.content).join('\n') + 
                        "\n\nBASE COMPANY CONTEXT:\n" + baseContext;
     
-    finalContext = finalContext.substring(0, 22000); // Protection against context overload
+    finalContext = finalContext.substring(0, 22000);
 
     // Stage 3: Final First-Principles Teardown
     updateLoadingStep('Finalizing deep analysis...');
-    const finalResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Full Research Data:\n${finalContext}` }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.0
-      })
+    const finalData = await callProxy('analyse', {
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: `Full Research Data:\n${finalContext}` }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.0
     });
 
-    const finalData = await finalResponse.json();
     const reportData = JSON.parse(finalData.choices[0].message.content);
 
     saveReport(reportData);
