@@ -1,7 +1,8 @@
 /**
  * Scout PWA - app.js
- * v5: Recursive Agentic Research Engine.
- * Brainstorms gaps, hunts for specific evidence, then analyses.
+ * v6: Optimized Two-Stage Agentic Research.
+ * Stage 1: Build robust base context.
+ * Stage 2: Consolidated deep-hunt for first-principles evidence.
  */
 
 const GROQ_KEY = 'YOUR_GROQ_API_KEY';
@@ -156,70 +157,85 @@ function renderDisambiguation(query, results, originalContext) {
   views.disambiguation.innerHTML = `
     <header class="home-header">
       <h1>Which ${query}?</h1>
-      <p>Select the correct company to start Recursive Research</p>
+      <p>Select source to start Deep Research</p>
     </header>
     <div class="disambiguation-list">
       ${results.map((r, i) => `
-        <div class="disambiguation-item" onclick="startAgenticAnalysis('${query}', ${i}, '${originalContext}')">
+        <div class="disambiguation-item" onclick="startOptimizedAnalysis('${query}', ${i}, '${originalContext}')">
           <h4>${r.title}</h4>
           <p>${r.url}</p>
           <p>${r.content.substring(0, 150)}...</p>
         </div>
       `).join('')}
-      <div class="disambiguation-item" onclick="startAgenticAnalysis('${query}', -1, '${originalContext}')">
+      <div class="disambiguation-item" onclick="startOptimizedAnalysis('${query}', -1, '${originalContext}')">
         <h4>General/Multi-Source Research</h4>
-        <p>Aggregate intelligence from all sources</p>
+        <p>Aggregate from all sources</p>
       </div>
     </div>
     <button class="btn-text" style="margin-top: 2rem" onclick="showView('home')">← Back to search</button>
   `;
 }
 
-async function startAgenticAnalysis(query, selectedIndex, originalContext) {
+async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
   showView('loading');
   elements.loadingCompanyName.textContent = query;
-  updateLoadingStep('Brainstorming intelligence gaps...');
-
-  let initialContext = originalContext ? `User Context: ${originalContext}\n\n` : '';
-  if (selectedIndex === -1) {
-    initialContext += lastSearchResults.map(r => r.content).join('\n\n');
-  } else {
-    initialContext += `Main Source: ${lastSearchResults[selectedIndex].content}`;
-  }
-
+  
+  // Stage 1: Build Base Context
+  updateLoadingStep('Expanding company base context...');
+  let baseContext = originalContext ? `User Context: ${originalContext}\n\n` : '';
+  if (selectedIndex !== -1) baseContext += `Main Selection: ${lastSearchResults[selectedIndex].content}\n`;
+  
   try {
-    // Stage 1: Identify Gaps
-    const gapResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const baseSearch = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: TAVILY_KEY,
+        query: `${query} company business model product features operations history`,
+        search_depth: "advanced",
+        max_results: 6
+      })
+    });
+    const baseData = await baseSearch.json();
+    baseContext += (baseData.results || []).map(r => r.content).join('\n\n');
+
+    // Stage 2: Unified Deep Hunt
+    updateLoadingStep('Consolidating deep-hunt queries...');
+    const huntQueryResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
         messages: [
-          { role: "system", content: "You are a researcher. Based on the provided company info, output exactly 3 specific search queries to find missing data on: Unit Economics, Flywheels, and Psychological Hooks. Output ONLY a JSON array of strings in a 'queries' field." },
-          { role: "user", content: initialContext }
-        ],
-        response_format: { type: "json_object" }
+          { role: "system", content: "You are a senior analyst. Based on this context, generate ONE highly targeted search query to find the 'Missing Deep Pillars': Unit Economics specifics, evidence of Flywheels, and the Psychological Hook/Functional needs. Output ONLY the query string." },
+          { role: "user", content: baseContext.substring(0, 8000) }
+        ]
       })
     });
-    
-    const gapData = await gapResponse.json();
-    const queries = JSON.parse(gapData.choices[0].message.content).queries || [];
-    
-    // Stage 2: Recursive Search
-    let enrichedContext = initialContext;
-    for (const q of queries) {
-      updateLoadingStep(`Hunting for ${q.toLowerCase()}...`);
-      const searchRes = await fetch('https://api.tavily.com/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ api_key: TAVILY_KEY, query: `${query} ${q}`, search_depth: "advanced", max_results: 3 })
-      });
-      const searchData = await searchRes.json();
-      enrichedContext += "\n\nNew Evidence:\n" + (searchData.results || []).map(r => r.content).join('\n');
-    }
+    const huntQueryResponseData = await huntQueryResponse.json();
+    const targetedQuery = huntQueryResponseData.choices[0].message.content.trim().replace(/^"|"$/g, '');
 
-    // Stage 3: Deep Analysis
-    updateLoadingStep('Executing first-principles teardown...');
+    updateLoadingStep(`Hunting for: ${targetedQuery.toLowerCase().substring(0, 40)}...`);
+    const deepHunt = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: TAVILY_KEY,
+        query: `${query} ${targetedQuery}`,
+        search_depth: "advanced",
+        max_results: 8
+      })
+    });
+    const huntData = await deepHunt.json();
+    
+    // Combine & Truncate to avoid overload (safe limit ~20k chars)
+    let finalContext = "DEEP HUNT EVIDENCE:\n" + (huntData.results || []).map(r => r.content).join('\n') + 
+                       "\n\nBASE COMPANY CONTEXT:\n" + baseContext;
+    
+    finalContext = finalContext.substring(0, 22000); // Protection against context overload
+
+    // Stage 3: Final First-Principles Teardown
+    updateLoadingStep('Finalizing deep analysis...');
     const finalResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
@@ -227,7 +243,7 @@ async function startAgenticAnalysis(query, selectedIndex, originalContext) {
         model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Context:\n${enrichedContext}` }
+          { role: "user", content: `Full Research Data:\n${finalContext}` }
         ],
         response_format: { type: "json_object" },
         temperature: 0.0
@@ -243,7 +259,7 @@ async function startAgenticAnalysis(query, selectedIndex, originalContext) {
 
   } catch (err) {
     console.error(err);
-    elements.errorMessage.textContent = `Recursive Search Error: ${err.message}`;
+    elements.errorMessage.textContent = `Optimized Search Error: ${err.message}`;
     showView('error');
   }
 }
@@ -351,7 +367,7 @@ function renderReport(data) {
   }
 }
 
-window.startAgenticAnalysis = startAgenticAnalysis;
+window.startOptimizedAnalysis = startOptimizedAnalysis;
 window.showView = showView;
 
 init();
