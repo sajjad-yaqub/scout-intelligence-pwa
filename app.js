@@ -1,7 +1,7 @@
 /**
  * Scout PWA - app.js
  * Handles API interaction, state, rendering, and PWA logic.
- * Switched to Groq (Llama 3.1 70B) for better reliability and speed.
+ * Switched to Groq (Llama 3.3 70B) for better reliability and speed.
  */
 
 const API_KEY = 'YOUR_GROQ_API_KEY'; // Replace with your Groq API Key
@@ -213,7 +213,7 @@ async function performAnalysis(company, context) {
         'Authorization': `Bearer ${API_KEY}`
       },
       body: JSON.stringify({
-        model: "llama-3.1-70b-versatile",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: USER_PROMPT_TEMPLATE(company, context) }
