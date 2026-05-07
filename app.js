@@ -1,6 +1,7 @@
 /**
  * Scout PWA - app.js
- * v9: Unmasking [object Object] Errors.
+ * v10: Token-Saver Optimization for Free Tier.
+ * Uses 8B model for internal steps & tighter context management.
  */
 
 const SYSTEM_PROMPT = `You are a senior operator and cynical venture investor. You provide blunt, deep, high-conviction teardowns using a first-principles mechanism.
@@ -199,49 +200,50 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
   
   try {
     // Stage 1: Build Base Context
-    updateLoadingStep('Expanding company base context...');
+    updateLoadingStep('Expanding base context (Token-Saver Active)...');
     let baseContext = originalContext ? `User Context: ${originalContext}\n\n` : '';
     if (selectedIndex !== -1 && lastSearchResults[selectedIndex]) {
       baseContext += `Main Selection: ${lastSearchResults[selectedIndex].content}\n`;
     }
     
     const baseData = await callProxy('search', {
-      query: `${query} company business model product features operations history`,
-      search_depth: "advanced",
-      max_results: 6
+      query: `${query} company business model product features operations`,
+      search_depth: "basic", // Faster, cheaper
+      max_results: 4 // Reduced results to save tokens
     });
     baseContext += (baseData.results || []).map(r => r.content).join('\n\n');
 
-    // Stage 2: Unified Deep Hunt
+    // Stage 2: Unified Deep Hunt (Using 8B model for token efficiency)
     updateLoadingStep('Consolidating deep-hunt queries...');
     const huntResponse = await callProxy('analyse', {
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-8b-instant", // CHEAPER MODEL
       messages: [
-        { role: "system", content: "You are a senior analyst. Based on this context, generate ONE highly targeted search query to find the 'Missing Deep Pillars': Unit Economics specifics, evidence of Flywheels, and the Psychological Hook/Functional needs. Output ONLY the query string." },
-        { role: "user", content: baseContext.substring(0, 8000) }
+        { role: "system", content: "You are a senior analyst. Based on this context, generate ONE highly targeted search query to find the 'Missing Deep Pillars': Unit Economics specifics, evidence of Flywheels, and the Psychological Hook. Output ONLY the query string." },
+        { role: "user", content: baseContext.substring(0, 5000) } // Trim context for brainstorming
       ]
     });
     
     if (!huntResponse.choices || !huntResponse.choices[0]) {
-      throw new Error("AI failed to generate a hunt query. Check API status.");
+      throw new Error("AI failed to generate a hunt query.");
     }
     
     const targetedQuery = huntResponse.choices[0].message.content.trim().replace(/^"|"$/g, '');
 
-    updateLoadingStep(`Hunting for: ${targetedQuery.toLowerCase().substring(0, 40)}...`);
+    updateLoadingStep(`Hunting for: ${targetedQuery.toLowerCase().substring(0, 30)}...`);
     const huntData = await callProxy('search', {
       query: `${query} ${targetedQuery}`,
-      search_depth: "advanced",
-      max_results: 8
+      search_depth: "basic",
+      max_results: 5
     });
     
+    // Tighter truncation (12k chars total) to stay well under token limits
     let finalContext = "DEEP HUNT EVIDENCE:\n" + (huntData.results || []).map(r => r.content).join('\n') + 
                        "\n\nBASE COMPANY CONTEXT:\n" + baseContext;
     
-    finalContext = finalContext.substring(0, 22000);
+    finalContext = finalContext.substring(0, 12000); 
 
-    // Stage 3: Final First-Principles Teardown
-    updateLoadingStep('Finalizing deep analysis...');
+    // Stage 3: Final First-Principles Teardown (Keep 70B for high quality)
+    updateLoadingStep('Executing high-conviction teardown...');
     const finalResponse = await callProxy('analyse', {
       model: "llama-3.3-70b-versatile",
       messages: [
@@ -253,7 +255,7 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
     });
 
     if (!finalResponse.choices || !finalResponse.choices[0]) {
-      throw new Error("AI failed to generate final teardown. Check API status.");
+      throw new Error("AI failed to generate final teardown.");
     }
 
     const reportData = JSON.parse(finalResponse.choices[0].message.content);
