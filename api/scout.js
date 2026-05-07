@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   if (!TAVILY_KEY || !GROQ_KEY) {
-    return res.status(500).json({ error: 'API Keys are missing in Vercel Environment Variables.' });
+    return res.status(500).json({ error: 'API Keys are missing in Vercel Environment Variables. Please set GROQ_API_KEY and TAVILY_API_KEY.' });
   }
 
   try {
@@ -21,6 +21,11 @@ export default async function handler(req, res) {
         body: JSON.stringify({ ...body, api_key: TAVILY_KEY })
       });
       const data = await response.json();
+      
+      if (!response.ok) {
+        return res.status(response.status).json({ error: data.detail || 'Tavily API Error' });
+      }
+      
       return res.status(200).json(data);
     }
 
@@ -34,11 +39,17 @@ export default async function handler(req, res) {
         body: JSON.stringify(body)
       });
       const data = await response.json();
+      
+      // Even if response.ok is false, we pass data back so app.js can show the specific AI error
+      if (!response.ok) {
+        return res.status(response.status).json(data);
+      }
+      
       return res.status(200).json(data);
     }
 
     res.status(400).json({ error: 'Invalid action' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: `Backend Proxy Error: ${error.message}` });
   }
 }
