@@ -1,117 +1,59 @@
 /**
  * Scout PWA - app.js
  * Handles API interaction, state, rendering, and PWA logic.
- * Switched to Groq (Llama 3.3 70B) for better reliability and speed.
+ * Integrated Tavily for real-time search to eliminate hallucinations.
+ * Added Disambiguation step for multiple company names.
  */
 
-const API_KEY = 'YOUR_GROQ_API_KEY'; // Replace with your Groq API Key
+const GROQ_KEY = 'YOUR_GROQ_API_KEY';
+const TAVILY_KEY = 'YOUR_TAVILY_API_KEY';
 
-const SYSTEM_PROMPT = `You are a senior operator/investor who has seen 500 pitches. You run structured, blunt, first-principles company analysis. No hedging. No consultant speak. Short sentences. Direct verdicts.
+const SYSTEM_PROMPT = `You are a senior operator/investor who has seen 500 pitches. You run structured, blunt, first-principles company analysis. 
 
-ALWAYS respond with valid JSON only. No markdown. No preamble. No explanation outside the JSON.`;
+RULES:
+1. NO HALLUCINATIONS. If the provided context doesn't contain a fact, state "DATA_GAP" or infer logically from context.
+2. Be skeptical. If a company claims a market size that seems impossible, flag it.
+3. Output ONLY valid JSON.
 
-const USER_PROMPT_TEMPLATE = (company, context) => `Research this company and return ONLY a JSON object matching this exact schema:
-
+JSON Schema:
 {
   "company": "string",
-  "tagline": "one sentence, plain language, no marketing",
+  "tagline": "string",
+  "data_quality_score": 0-100,
+  "missing_info_warning": "string | null",
   "tldr": {
-    "verdict": "Back | Pass | Interesting but...",
-    "verdict_reason": "one sentence",
-    "strengths": ["string", "string", "string"],
-    "risks": ["string", "string", "string"]
+    "verdict": "Back | Pass | Watch",
+    "verdict_reason": "string",
+    "strengths": ["string"],
+    "risks": ["string"]
   },
   "sections": [
-    {
-      "id": "what_they_do",
-      "title": "What They Do",
-      "finding": "2-3 sentences",
-      "status": null
-    },
-    {
-      "id": "claimed_problem",
-      "title": "Claimed Problem",
-      "finding": "their framing + your translation",
-      "status": null
-    },
-    {
-      "id": "user",
-      "title": "The User",
-      "finding": "precise user definition, not vague",
-      "status": null
-    },
-    {
-      "id": "real_problem_stack",
-      "title": "Real Problem Stack",
-      "finding": "top 3-5 actual problems this user faces in this category",
-      "problems": ["string", "string", "string"],
-      "status": null
-    },
-    {
-      "id": "user_problem_fit",
-      "title": "User–Problem Fit",
-      "finding": "does their claimed problem rank #1 or #2 in the real stack?",
-      "status": "strong | weak | wrong"
-    },
-    {
-      "id": "current_solutions",
-      "title": "How They Solve It Today",
-      "finding": "existing alternatives and switching motivation",
-      "status": "strong | weak | wrong"
-    },
-    {
-      "id": "monetisation",
-      "title": "Monetisation Logic",
-      "finding": "value captured, business model",
-      "status": "strong | weak | wrong"
-    },
-    {
-      "id": "market_size",
-      "title": "Market Size",
-      "finding": "bottom-up: exact user count × willingness to pay. No top-down TAM.",
-      "number": "string",
-      "number_note": "basis for the estimate",
-      "status": null
-    },
-    {
-      "id": "unit_economics",
-      "title": "Unit Economics",
-      "finding": "CM2 and CM3 logic, payback period, CAC trajectory",
-      "status": "strong | weak | wrong"
-    },
-    {
-      "id": "defensibility",
-      "title": "Defensibility",
-      "finding": "overall moat assessment",
-      "scorecard": [
-        { "dimension": "Network Effects", "present": true, "strength": "strong | moderate | weak | none", "note": "string" },
-        { "dimension": "Data Moat", "present": false, "strength": "strong | moderate | weak | none", "note": "string" },
-        { "dimension": "Switching Costs", "present": true, "strength": "strong | moderate | weak | none", "note": "string" },
-        { "dimension": "Brand / Trust", "present": false, "strength": "strong | moderate | weak | none", "note": "string" },
-        { "dimension": "Workflow Lock-in", "present": true, "strength": "strong | moderate | weak | none", "note": "string" },
-        { "dimension": "Regulatory Barriers", "present": false, "strength": "strong | moderate | weak | none", "note": "string" },
-        { "dimension": "Execution Speed", "present": true, "strength": "strong | moderate | weak | none", "note": "string" }
-      ],
-      "status": "strong | weak | wrong"
-    }
+    { "id": "what_they_do", "title": "What They Do", "finding": "string", "status": null },
+    { "id": "claimed_problem", "title": "Claimed Problem", "finding": "string", "status": null },
+    { "id": "user", "title": "The User", "finding": "string", "status": null },
+    { "id": "real_problem_stack", "title": "Real Problem Stack", "problems": ["string"], "status": null },
+    { "id": "user_problem_fit", "title": "User–Problem Fit", "finding": "string", "status": "strong | weak | wrong" },
+    { "id": "current_solutions", "title": "Current Solutions", "finding": "string", "status": "strong | weak | wrong" },
+    { "id": "monetisation", "title": "Monetisation", "finding": "string", "status": "strong | weak | wrong" },
+    { "id": "market_size", "title": "Market Size", "number": "string", "finding": "string", "status": null },
+    { "id": "unit_economics", "title": "Unit Economics", "finding": "string", "status": "strong | weak | wrong" },
+    { "id": "defensibility", "title": "Defensibility", "finding": "string", "scorecard": [], "status": "strong | weak | wrong" }
   ],
-  "gaps_table": [
-    { "gap": "string", "fix": "string" }
-  ],
-  "overall_verdict": "string",
-  "overall_status": "back | pass | interesting"
-}
-
-Company to research: ${company}
-Additional context: ${context || 'None'}`;
+  "gaps_table": [{ "gap": "string", "fix": "string" }],
+  "overall_verdict": "string"
+}`;
 
 // DOM Elements
 const views = {
   home: document.getElementById('home-screen'),
   report: document.getElementById('report-screen'),
   loading: document.getElementById('loading-screen'),
-  error: document.getElementById('error-screen')
+  error: document.getElementById('error-screen'),
+  disambiguation: document.createElement('section')
 };
+views.disambiguation.id = 'disambiguation-screen';
+views.disambiguation.className = 'view hidden';
+document.getElementById('app').appendChild(views.disambiguation);
 
 const elements = {
   companyInput: document.getElementById('company-name'),
@@ -124,31 +66,27 @@ const elements = {
   backBtn: document.getElementById('back-to-home'),
   loadingCompanyName: document.getElementById('loading-company-name'),
   errorMessage: document.getElementById('error-message'),
-  retryBtn: document.getElementById('retry-btn'),
-  apiWarning: document.getElementById('api-warning'),
-  installBanner: document.getElementById('install-banner'),
-  installBtn: document.getElementById('install-btn')
+  retryBtn: document.getElementById('retry-btn')
 };
 
-// State
-let deferredPrompt;
-let currentReport = null;
+// Global State
+let lastSearchResults = [];
 
 // Initialize
 function init() {
-  if (!API_KEY || API_KEY === 'YOUR_GROQ_API_KEY') {
-    elements.apiWarning.classList.remove('hidden');
-  }
-
-  // Register SW
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log('SW registered'))
-      .catch(err => console.log('SW failed', err));
-  }
-
   renderRecentSearches();
   setupEventListeners();
+  
+  const style = document.createElement('style');
+  style.textContent = `
+    .disambiguation-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem; }
+    .disambiguation-item { background: var(--panel); border: 1px solid var(--border); padding: 1rem; cursor: pointer; text-align: left; transition: 0.2s; }
+    .disambiguation-item:hover { border-color: var(--text); }
+    .disambiguation-item h4 { margin-bottom: 0.25rem; font-family: var(--sans); font-weight: 600; }
+    .disambiguation-item p { font-size: 0.85rem; color: var(--text-dim); }
+    .warning-banner { background: #332200; color: #ffaa00; padding: 0.75rem; font-size: 0.85rem; margin-bottom: 1.5rem; border: 1px solid #ffaa00; font-family: var(--mono); }
+  `;
+  document.head.appendChild(style);
 }
 
 function setupEventListeners() {
@@ -160,49 +98,90 @@ function setupEventListeners() {
   elements.analyseBtn.addEventListener('click', () => {
     const company = elements.companyInput.value.trim();
     const context = elements.extraContext.value.trim();
-    if (company) performAnalysis(company, context);
+    if (company) startResearchFlow(company, context);
   });
 
   elements.backBtn.addEventListener('click', () => showView('home'));
-  elements.retryBtn.addEventListener('click', () => {
-    const company = elements.companyInput.value.trim();
-    const context = elements.extraContext.value.trim();
-    performAnalysis(company, context);
-  });
-
-  // PWA Install
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-  });
-
-  elements.installBtn.addEventListener('click', async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        elements.installBanner.classList.add('hidden');
-      }
-      deferredPrompt = null;
-    }
-  });
 }
 
 function showView(viewName) {
-  Object.keys(views).forEach(v => {
-    views[v].classList.add('hidden');
-  });
+  [...Object.values(views)].forEach(v => v.classList.add('hidden'));
   views[viewName].classList.remove('hidden');
   window.scrollTo(0, 0);
 }
 
-async function performAnalysis(company, context) {
-  if (!API_KEY || API_KEY === 'YOUR_GROQ_API_KEY') {
-    alert("API_KEY is missing. Add it to app.js to use this tool.");
+async function startResearchFlow(company, context) {
+  if (GROQ_KEY.includes('YOUR_') || TAVILY_KEY.includes('YOUR_')) {
+    alert("API Keys are missing. Please add your Groq and Tavily keys to app.js");
+    showView('home');
     return;
   }
 
-  elements.loadingCompanyName.textContent = `Researching ${company}...`;
+  elements.loadingCompanyName.textContent = `Searching for ${company}...`;
+  showView('loading');
+
+  try {
+    const response = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: TAVILY_KEY,
+        query: `${company} company product business model`,
+        search_depth: "advanced",
+        max_results: 5
+      })
+    });
+    
+    const searchResults = await response.json();
+    const results = searchResults.results || [];
+    lastSearchResults = results;
+    
+    renderDisambiguation(company, results, context);
+    showView('disambiguation');
+
+  } catch (err) {
+    console.error(err);
+    elements.errorMessage.textContent = `Search Error: ${err.message}`;
+    showView('error');
+  }
+}
+
+function renderDisambiguation(query, results, originalContext) {
+  views.disambiguation.innerHTML = `
+    <header class="home-header">
+      <h1>Which ${query}?</h1>
+      <p>Select the correct company to start analysis</p>
+    </header>
+    <div class="disambiguation-list">
+      ${results.map((r, i) => `
+        <div class="disambiguation-item" onclick="performDeepAnalysis('${query}', ${i}, '${originalContext}')">
+          <h4>${r.title}</h4>
+          <p>${r.url}</p>
+          <p>${r.content.substring(0, 150)}...</p>
+        </div>
+      `).join('')}
+      <div class="disambiguation-item" onclick="performDeepAnalysis('${query}', -1, '${originalContext}')">
+        <h4>None of these / General Research</h4>
+        <p>Use all search results for a general teardown</p>
+      </div>
+    </div>
+    <button class="btn-text" style="margin-top: 2rem" onclick="showView('home')">← Back to search</button>
+  `;
+}
+
+async function performDeepAnalysis(query, selectedIndex, originalContext) {
+  const results = lastSearchResults;
+  let contextText = originalContext ? `User Context: ${originalContext}\n\n` : '';
+  
+  if (selectedIndex === -1) {
+    contextText += results.map(r => `Source: ${r.url}\nContent: ${r.content}`).join('\n\n');
+  } else {
+    const r = results[selectedIndex];
+    contextText += `Target: ${r.title}\nURL: ${r.url}\nContent: ${r.content}\n\n`;
+    contextText += "Secondary Context:\n" + results.filter((_, i) => i !== selectedIndex).map(r => r.content).join('\n');
+  }
+
+  elements.loadingCompanyName.textContent = `Analysing ${query}...`;
   showView('loading');
 
   try {
@@ -210,47 +189,35 @@ async function performAnalysis(company, context) {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
+        'Authorization': `Bearer ${GROQ_KEY}`
       },
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: USER_PROMPT_TEMPLATE(company, context) }
+          { role: "user", content: `Company: ${query}\n\nResearch Context:\n${contextText}` }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.2
+        temperature: 0.1
       })
     });
 
-    if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(`Groq API Error: ${response.status} ${errData.error?.message || ''}`);
-    }
-
     const data = await response.json();
-    const resultText = data.choices[0].message.content;
-    const reportData = JSON.parse(resultText);
+    const reportData = JSON.parse(data.choices[0].message.content);
 
     saveReport(reportData);
     renderReport(reportData);
     showView('report');
-    
-    // Show install banner after first success if prompt exists
-    if (deferredPrompt) {
-      elements.installBanner.classList.remove('hidden');
-    }
 
   } catch (err) {
     console.error(err);
-    elements.errorMessage.textContent = err.message;
+    elements.errorMessage.textContent = `Analysis Error: ${err.message}`;
     showView('error');
   }
 }
 
 function saveReport(report) {
   const recent = JSON.parse(localStorage.getItem('scout_reports') || '[]');
-  // Remove existing entry for same company if it exists
   const filtered = recent.filter(r => r.company.toLowerCase() !== report.company.toLowerCase());
   filtered.unshift({ ...report, timestamp: Date.now() });
   localStorage.setItem('scout_reports', JSON.stringify(filtered.slice(0, 5)));
@@ -259,7 +226,9 @@ function saveReport(report) {
 
 function renderRecentSearches() {
   const recent = JSON.parse(localStorage.getItem('scout_reports') || '[]');
-  elements.recentChips.innerHTML = '';
+  const chips = document.getElementById('recent-chips');
+  if (!chips) return;
+  chips.innerHTML = '';
   recent.forEach(report => {
     const chip = document.createElement('div');
     chip.className = 'chip';
@@ -268,7 +237,7 @@ function renderRecentSearches() {
       renderReport(report);
       showView('report');
     });
-    elements.recentChips.appendChild(chip);
+    chips.appendChild(chip);
   });
 }
 
@@ -276,18 +245,25 @@ function renderReport(data) {
   elements.reportHeader.textContent = data.company;
   elements.reportContainer.innerHTML = '';
 
-  // 1. TLDR Card
+  if (data.missing_info_warning) {
+    const warning = document.createElement('div');
+    warning.className = 'warning-banner';
+    warning.textContent = `⚠️ ATTENTION: ${data.missing_info_warning}`;
+    elements.reportContainer.appendChild(warning);
+  }
+
   const tldr = data.tldr;
-  const tldrEl = document.createElement('div');
   const verdictClass = tldr.verdict.toLowerCase().includes('back') ? 'back' : 
                        tldr.verdict.toLowerCase().includes('pass') ? 'pass' : 'interesting';
   
+  const tldrEl = document.createElement('div');
   tldrEl.className = `card tldr-card ${verdictClass}`;
   tldrEl.innerHTML = `
     <div class="tldr-header">
       <div class="tldr-title">
         <h2>${data.company}</h2>
         <p>${data.tagline}</p>
+        <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); margin-top: 0.5rem">Data Quality: ${data.data_quality_score}/100</div>
       </div>
       <div class="pill ${verdictClass}">${tldr.verdict}</div>
     </div>
@@ -305,7 +281,6 @@ function renderReport(data) {
   `;
   elements.reportContainer.appendChild(tldrEl);
 
-  // 2. Section Cards Grid
   const grid = document.createElement('div');
   grid.className = 'report-grid';
   
@@ -319,33 +294,11 @@ function renderReport(data) {
     if (section.status === 'wrong') badge = '❌ Problem';
 
     let contentHTML = `<p class="finding">${section.finding}</p>`;
-
-    if (section.id === 'real_problem_stack' && section.problems) {
+    if (section.problems) {
       contentHTML += `<ol class="problems-list">${section.problems.map(p => `<li>${p}</li>`).join('')}</ol>`;
     }
-
-    if (section.id === 'market_size') {
-      contentHTML = `
-        <div class="number-callout">${data.sections.find(s => s.id === 'market_size').number || '—'}</div>
-        <p class="number-note">${data.sections.find(s => s.id === 'market_size').number_note || ''}</p>
-        ${contentHTML}
-      `;
-    }
-
-    if (section.id === 'defensibility' && section.scorecard) {
-      contentHTML += `
-        <table class="scorecard-table">
-          <thead><tr><th>Dimension</th><th>Strength</th></tr></thead>
-          <tbody>
-            ${section.scorecard.map(row => `
-              <tr>
-                <td>${row.dimension}</td>
-                <td><span class="dot ${row.strength}"></span> ${row.strength}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
+    if (section.id === 'market_size' && section.number) {
+      contentHTML = `<div class="number-callout">${section.number}</div>` + contentHTML;
     }
 
     card.innerHTML = `
@@ -357,50 +310,23 @@ function renderReport(data) {
     `;
     grid.appendChild(card);
   });
-
   elements.reportContainer.appendChild(grid);
 
-  // 3. Gaps Table
-  if (data.gaps_table && data.gaps_table.length > 0) {
-    const gapsEl = document.createElement('div');
-    gapsEl.className = 'gaps-section';
-    gapsEl.innerHTML = `
+  if (data.gaps_table) {
+    const gaps = document.createElement('div');
+    gaps.className = 'gaps-section';
+    gaps.innerHTML = `
       <h2>Gaps & Fixes</h2>
       <table class="gaps-table">
-        <thead><tr><th>Gap</th><th>Right Fix</th></tr></thead>
-        <tbody>
-          ${data.gaps_table.map(row => `
-            <tr>
-              <td>${row.gap}</td>
-              <td>${row.fix}</td>
-            </tr>
-          `).join('')}
-        </tbody>
+        <thead><tr><th>Gap</th><th>Fix</th></tr></thead>
+        <tbody>${data.gaps_table.map(g => `<tr><td>${g.gap}</td><td>${g.fix}</td></tr>`).join('')}</tbody>
       </table>
     `;
-    elements.reportContainer.appendChild(gapsEl);
+    elements.reportContainer.appendChild(gaps);
   }
-
-  // 4. Overall Verdict
-  const overallEl = document.createElement('div');
-  overallEl.className = 'overall-section';
-  overallEl.innerHTML = `
-    <div class="overall-text">${data.overall_verdict}</div>
-  `;
-  elements.reportContainer.appendChild(overallEl);
-  
-  // Stagger animations
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry, i) => {
-      if (entry.isIntersecting) {
-        setTimeout(() => {
-          entry.target.classList.add('visible');
-        }, i * 100);
-      }
-    });
-  }, { threshold: 0.1 });
-  
-  document.querySelectorAll('.card').forEach(card => observer.observe(card));
 }
+
+window.performDeepAnalysis = performDeepAnalysis;
+window.showView = showView;
 
 init();
