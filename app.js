@@ -1,28 +1,30 @@
 /**
  * Scout PWA - app.js
  * Handles API interaction, state, rendering, and PWA logic.
- * Integrated Tavily for real-time search to eliminate hallucinations.
- * Added Disambiguation step for multiple company names.
+ * v3: Deep First-Principles Analysis (Psychology, Flywheels, The Engine).
  */
 
 const GROQ_KEY = 'YOUR_GROQ_API_KEY';
 const TAVILY_KEY = 'YOUR_TAVILY_API_KEY';
 
-const SYSTEM_PROMPT = `You are a senior operator/investor who has seen 500 pitches. You run structured, blunt, first-principles company analysis. 
+const SYSTEM_PROMPT = `You are a senior operator and cynical venture investor. You provide blunt, deep, high-conviction teardowns.
+
+ANALYTIC FRAMEWORK:
+1. HUMAN NATURE: What deep psychological need (Functional, Emotional, Social) is being solved?
+2. THE ENGINE: What is the "product that makes the product"? (Ops, Distribution, Manufacturing).
+3. THE FLYWHEEL: How does every new user make the product better or cheaper for the next?
+4. THE MESSAGE/CHANNEL: How do they win attention? Is it a repeatable hack or a brand moat?
 
 RULES:
-1. NO HEDGING. NO CONSULTANT SPEAK.
-2. NEVER say "more data is needed" or "further research is required" in the findings. If a specific metric (like CAC or LTV) is missing, infer it based on industry benchmarks for similar companies.
-3. NO HALLUCINATIONS. If you infer, make it clear it's a logical deduction (e.g., "Category norms suggest...").
-4. Be skeptical. If a company claims a market size that seems impossible, flag it.
-5. Output ONLY valid JSON.
+1. TOTAL CONVICTION. No hedging. No "needs more data". 
+2. If info is missing, INFER IT from category norms and psychological first principles.
+3. BE ROBOTICALLY ANALYTICAL.
 
 JSON Schema:
 {
   "company": "string",
   "tagline": "string",
   "data_quality_score": 0-100,
-  "missing_info_warning": "string | null",
   "tldr": {
     "verdict": "Back | Pass | Watch",
     "verdict_reason": "string",
@@ -30,16 +32,15 @@ JSON Schema:
     "risks": ["string"]
   },
   "sections": [
-    { "id": "what_they_do", "title": "What They Do", "finding": "string", "status": null },
-    { "id": "claimed_problem", "title": "Claimed Problem", "finding": "string", "status": null },
-    { "id": "user", "title": "The User", "finding": "string", "status": null },
-    { "id": "real_problem_stack", "title": "Real Problem Stack", "problems": ["string"], "status": null },
-    { "id": "user_problem_fit", "title": "User–Problem Fit", "finding": "string", "status": "strong | weak | wrong" },
-    { "id": "current_solutions", "title": "Current Solutions", "finding": "string", "status": "strong | weak | wrong" },
-    { "id": "monetisation", "title": "Monetisation", "finding": "string", "status": "strong | weak | wrong" },
-    { "id": "market_size", "title": "Market Size", "number": "string", "finding": "string", "status": null },
-    { "id": "unit_economics", "title": "Unit Economics", "finding": "string", "status": "strong | weak | wrong" },
-    { "id": "defensibility", "title": "Defensibility", "finding": "string", "scorecard": [], "status": "strong | weak | wrong" }
+    { "id": "human_psychology", "title": "Psychological Hook", "finding": "Deep functional, emotional, and social needs addressed.", "status": null },
+    { "id": "user", "title": "The True User", "finding": "Who is actually paying and why?", "status": null },
+    { "id": "real_problem_stack", "title": "Problem Stack", "problems": ["string"], "status": null },
+    { "id": "the_engine", "title": "The Engine", "finding": "The 'product that makes the product' (Ops/Distribution/Tech).", "status": "strong | weak | wrong" },
+    { "id": "flywheel", "title": "The Flywheel", "finding": "The self-reinforcing loop that creates defensibility.", "status": "strong | weak | wrong" },
+    { "id": "message_channel", "title": "Message & Channel", "finding": "The acquisition hack or brand authority.", "status": "strong | weak | wrong" },
+    { "id": "monetisation", "title": "PnL & Monetisation", "finding": "Unit economics and value capture logic.", "status": "strong | weak | wrong" },
+    { "id": "market_size", "title": "Real Market Size", "number": "string", "finding": "Bottom-up estimate.", "status": null },
+    { "id": "defensibility", "title": "Moat Assessment", "finding": "Why this won't be copied in 6 months.", "scorecard": [], "status": "strong | weak | wrong" }
   ],
   "gaps_table": [{ "gap": "string", "fix": "string" }],
   "overall_verdict": "string"
@@ -86,7 +87,6 @@ function init() {
     .disambiguation-item:hover { border-color: var(--text); }
     .disambiguation-item h4 { margin-bottom: 0.25rem; font-family: var(--sans); font-weight: 600; }
     .disambiguation-item p { font-size: 0.85rem; color: var(--text-dim); }
-    .warning-banner { background: #332200; color: #ffaa00; padding: 0.75rem; font-size: 0.85rem; margin-bottom: 1.5rem; border: 1px solid #ffaa00; font-family: var(--mono); }
   `;
   document.head.appendChild(style);
 }
@@ -128,7 +128,7 @@ async function startResearchFlow(company, context) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         api_key: TAVILY_KEY,
-        query: `${company} company product business model`,
+        query: `${company} company product flywheel unit economics ops`,
         search_depth: "advanced",
         max_results: 5
       })
@@ -200,7 +200,7 @@ async function performDeepAnalysis(query, selectedIndex, originalContext) {
           { role: "user", content: `Company: ${query}\n\nResearch Context:\n${contextText}` }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.1
+        temperature: 0.0
       })
     });
 
@@ -246,13 +246,6 @@ function renderRecentSearches() {
 function renderReport(data) {
   elements.reportHeader.textContent = data.company;
   elements.reportContainer.innerHTML = '';
-
-  if (data.missing_info_warning) {
-    const warning = document.createElement('div');
-    warning.className = 'warning-banner';
-    warning.textContent = `⚠️ ATTENTION: ${data.missing_info_warning}`;
-    elements.reportContainer.appendChild(warning);
-  }
 
   const tldr = data.tldr;
   const verdictClass = tldr.verdict.toLowerCase().includes('back') ? 'back' : 
