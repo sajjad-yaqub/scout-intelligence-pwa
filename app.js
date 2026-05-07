@@ -1,15 +1,15 @@
 /**
  * Scout PWA - app.js
- * Handles API interaction, state, rendering, and PWA logic.
- * v4: Merged v3 First-Principles Brain into v1 13-Step Structure.
+ * v5: Recursive Agentic Research Engine.
+ * Brainstorms gaps, hunts for specific evidence, then analyses.
  */
 
 const GROQ_KEY = 'YOUR_GROQ_API_KEY';
 const TAVILY_KEY = 'YOUR_TAVILY_API_KEY';
 
-const SYSTEM_PROMPT = `You are a senior operator and cynical venture investor. You provide blunt, high-conviction teardowns using a first-principles mechanism.
+const SYSTEM_PROMPT = `You are a senior operator and cynical venture investor. You provide blunt, deep, high-conviction teardowns using a first-principles mechanism.
 
-ANALYTIC MECHANISM (Apply these to the sections below):
+ANALYTIC MECHANISM:
 - HUMAN NATURE: Deconstruct functional, emotional, and social needs.
 - THE ENGINE: Analyse the "product that makes the product" (Ops/Distribution).
 - FLYWHEEL: Identify the growth loops and self-reinforcing moats.
@@ -20,7 +20,7 @@ RULES:
 2. If info is missing, INFER IT from category norms and psychological first principles.
 3. BE ROBOTICALLY ANALYTICAL.
 
-JSON Schema (Strictly follow this structure):
+JSON Schema:
 {
   "company": "string",
   "tagline": "string",
@@ -32,16 +32,16 @@ JSON Schema (Strictly follow this structure):
     "risks": ["string"]
   },
   "sections": [
-    { "id": "what_they_do", "title": "What They Do", "finding": "Incorporate 'The Engine' and 'Message' logic.", "status": null },
-    { "id": "claimed_problem", "title": "Claimed Problem", "finding": "The surface-level pain point.", "status": null },
-    { "id": "user", "title": "The User", "finding": "Deconstruct deep functional/emotional/social needs.", "status": null },
+    { "id": "what_they_do", "title": "What They Do", "finding": "string", "status": null },
+    { "id": "claimed_problem", "title": "Claimed Problem", "finding": "string", "status": null },
+    { "id": "user", "title": "The User", "finding": "string", "status": null },
     { "id": "real_problem_stack", "title": "Real Problem Stack", "problems": ["string"], "status": null },
-    { "id": "user_problem_fit", "title": "User–Problem Fit", "finding": "Psychological alignment check.", "status": "strong | weak | wrong" },
-    { "id": "current_solutions", "title": "Current Solutions", "finding": "Why existing alternatives fail the psychology test.", "status": "strong | weak | wrong" },
-    { "id": "monetisation", "title": "Monetisation", "finding": "The value capture engine.", "status": "strong | weak | wrong" },
-    { "id": "market_size", "title": "Market Size", "number": "string", "finding": "Bottom-up realistic estimate.", "status": null },
-    { "id": "unit_economics", "title": "Unit Economics", "finding": "PnL logic and the 'product that makes the product'.", "status": "strong | weak | wrong" },
-    { "id": "defensibility", "title": "Defensibility", "finding": "The Flywheel and Moat evaluation.", "scorecard": [], "status": "strong | weak | wrong" }
+    { "id": "user_problem_fit", "title": "User–Problem Fit", "finding": "string", "status": "strong | weak | wrong" },
+    { "id": "current_solutions", "title": "Current Solutions", "finding": "string", "status": "strong | weak | wrong" },
+    { "id": "monetisation", "title": "Monetisation", "finding": "string", "status": "strong | weak | wrong" },
+    { "id": "market_size", "title": "Market Size", "number": "string", "finding": "string", "status": null },
+    { "id": "unit_economics", "title": "Unit Economics", "finding": "string", "status": "strong | weak | wrong" },
+    { "id": "defensibility", "title": "Defensibility", "finding": "string", "scorecard": [], "status": "strong | weak | wrong" }
   ],
   "gaps_table": [{ "gap": "string", "fix": "string" }],
   "overall_verdict": "string"
@@ -88,6 +88,7 @@ function init() {
     .disambiguation-item:hover { border-color: var(--text); }
     .disambiguation-item h4 { margin-bottom: 0.25rem; font-family: var(--sans); font-weight: 600; }
     .disambiguation-item p { font-size: 0.85rem; color: var(--text-dim); }
+    .loading-step { font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem; font-family: var(--mono); }
   `;
   document.head.appendChild(style);
 }
@@ -113,14 +114,18 @@ function showView(viewName) {
   window.scrollTo(0, 0);
 }
 
-async function startResearchFlow(company, context) {
-  if (GROQ_KEY.includes('YOUR_') || TAVILY_KEY.includes('YOUR_')) {
-    alert("API Keys are missing. Please add your Groq and Tavily keys to app.js");
-    showView('home');
-    return;
+function updateLoadingStep(step) {
+  let stepEl = document.querySelector('.loading-step');
+  if (!stepEl) {
+    stepEl = document.createElement('div');
+    stepEl.className = 'loading-step';
+    elements.loadingCompanyName.parentElement.appendChild(stepEl);
   }
+  stepEl.textContent = `> ${step}`;
+}
 
-  elements.loadingCompanyName.textContent = `Searching for ${company}...`;
+async function startResearchFlow(company, context) {
+  updateLoadingStep('Broad search initiated...');
   showView('loading');
 
   try {
@@ -129,17 +134,15 @@ async function startResearchFlow(company, context) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         api_key: TAVILY_KEY,
-        query: `${company} company product flywheel unit economics ops psychology`,
-        search_depth: "advanced",
+        query: `${company} company details overview`,
+        search_depth: "basic",
         max_results: 5
       })
     });
     
     const searchResults = await response.json();
-    const results = searchResults.results || [];
-    lastSearchResults = results;
-    
-    renderDisambiguation(company, results, context);
+    lastSearchResults = searchResults.results || [];
+    renderDisambiguation(company, lastSearchResults, context);
     showView('disambiguation');
 
   } catch (err) {
@@ -153,60 +156,86 @@ function renderDisambiguation(query, results, originalContext) {
   views.disambiguation.innerHTML = `
     <header class="home-header">
       <h1>Which ${query}?</h1>
-      <p>Select the correct company to start analysis</p>
+      <p>Select the correct company to start Recursive Research</p>
     </header>
     <div class="disambiguation-list">
       ${results.map((r, i) => `
-        <div class="disambiguation-item" onclick="performDeepAnalysis('${query}', ${i}, '${originalContext}')">
+        <div class="disambiguation-item" onclick="startAgenticAnalysis('${query}', ${i}, '${originalContext}')">
           <h4>${r.title}</h4>
           <p>${r.url}</p>
           <p>${r.content.substring(0, 150)}...</p>
         </div>
       `).join('')}
-      <div class="disambiguation-item" onclick="performDeepAnalysis('${query}', -1, '${originalContext}')">
-        <h4>None of these / General Research</h4>
-        <p>Use all search results for a general teardown</p>
+      <div class="disambiguation-item" onclick="startAgenticAnalysis('${query}', -1, '${originalContext}')">
+        <h4>General/Multi-Source Research</h4>
+        <p>Aggregate intelligence from all sources</p>
       </div>
     </div>
     <button class="btn-text" style="margin-top: 2rem" onclick="showView('home')">← Back to search</button>
   `;
 }
 
-async function performDeepAnalysis(query, selectedIndex, originalContext) {
-  const results = lastSearchResults;
-  let contextText = originalContext ? `User Context: ${originalContext}\n\n` : '';
-  
+async function startAgenticAnalysis(query, selectedIndex, originalContext) {
+  showView('loading');
+  elements.loadingCompanyName.textContent = query;
+  updateLoadingStep('Brainstorming intelligence gaps...');
+
+  let initialContext = originalContext ? `User Context: ${originalContext}\n\n` : '';
   if (selectedIndex === -1) {
-    contextText += results.map(r => `Source: ${r.url}\nContent: ${r.content}`).join('\n\n');
+    initialContext += lastSearchResults.map(r => r.content).join('\n\n');
   } else {
-    const r = results[selectedIndex];
-    contextText += `Target: ${r.title}\nURL: ${r.url}\nContent: ${r.content}\n\n`;
-    contextText += "Secondary Context:\n" + results.filter((_, i) => i !== selectedIndex).map(r => r.content).join('\n');
+    initialContext += `Main Source: ${lastSearchResults[selectedIndex].content}`;
   }
 
-  elements.loadingCompanyName.textContent = `Analysing ${query}...`;
-  showView('loading');
-
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    // Stage 1: Identify Gaps
+    const gapResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: "You are a researcher. Based on the provided company info, output exactly 3 specific search queries to find missing data on: Unit Economics, Flywheels, and Psychological Hooks. Output ONLY a JSON array of strings in a 'queries' field." },
+          { role: "user", content: initialContext }
+        ],
+        response_format: { type: "json_object" }
+      })
+    });
+    
+    const gapData = await gapResponse.json();
+    const queries = JSON.parse(gapData.choices[0].message.content).queries || [];
+    
+    // Stage 2: Recursive Search
+    let enrichedContext = initialContext;
+    for (const q of queries) {
+      updateLoadingStep(`Hunting for ${q.toLowerCase()}...`);
+      const searchRes = await fetch('https://api.tavily.com/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: TAVILY_KEY, query: `${query} ${q}`, search_depth: "advanced", max_results: 3 })
+      });
+      const searchData = await searchRes.json();
+      enrichedContext += "\n\nNew Evidence:\n" + (searchData.results || []).map(r => r.content).join('\n');
+    }
+
+    // Stage 3: Deep Analysis
+    updateLoadingStep('Executing first-principles teardown...');
+    const finalResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Company: ${query}\n\nResearch Context:\n${contextText}` }
+          { role: "user", content: `Context:\n${enrichedContext}` }
         ],
         response_format: { type: "json_object" },
         temperature: 0.0
       })
     });
 
-    const data = await response.json();
-    const reportData = JSON.parse(data.choices[0].message.content);
+    const finalData = await finalResponse.json();
+    const reportData = JSON.parse(finalData.choices[0].message.content);
 
     saveReport(reportData);
     renderReport(reportData);
@@ -214,7 +243,7 @@ async function performDeepAnalysis(query, selectedIndex, originalContext) {
 
   } catch (err) {
     console.error(err);
-    elements.errorMessage.textContent = `Analysis Error: ${err.message}`;
+    elements.errorMessage.textContent = `Recursive Search Error: ${err.message}`;
     showView('error');
   }
 }
@@ -259,7 +288,7 @@ function renderReport(data) {
       <div class="tldr-title">
         <h2>${data.company}</h2>
         <p>${data.tagline}</p>
-        <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); margin-top: 0.5rem">Data Quality: ${data.data_quality_score}/100</div>
+        <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); margin-top: 0.5rem">Intelligence Quality: ${data.data_quality_score}/100</div>
       </div>
       <div class="pill ${verdictClass}">${tldr.verdict}</div>
     </div>
@@ -312,7 +341,7 @@ function renderReport(data) {
     const gaps = document.createElement('div');
     gaps.className = 'gaps-section';
     gaps.innerHTML = `
-      <h2>Gaps & Fixes</h2>
+      <h2>Strategic Gaps</h2>
       <table class="gaps-table">
         <thead><tr><th>Gap</th><th>Fix</th></tr></thead>
         <tbody>${data.gaps_table.map(g => `<tr><td>${g.gap}</td><td>${g.fix}</td></tr>`).join('')}</tbody>
@@ -322,7 +351,7 @@ function renderReport(data) {
   }
 }
 
-window.performDeepAnalysis = performDeepAnalysis;
+window.startAgenticAnalysis = startAgenticAnalysis;
 window.showView = showView;
 
 init();
