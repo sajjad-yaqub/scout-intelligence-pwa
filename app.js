@@ -1,6 +1,6 @@
 /**
  * Scout PWA - app.js
- * v7: Vercel Backend Integration (Bypasses CORS).
+ * v8: Robust Error Handling & Vercel Proxy.
  */
 
 const SYSTEM_PROMPT = `You are a senior operator and cynical venture investor. You provide blunt, deep, high-conviction teardowns using a first-principles mechanism.
@@ -45,16 +45,28 @@ JSON Schema:
 
 // Helper: Call Vercel Proxy
 async function callProxy(action, body) {
-  const response = await fetch('/api/scout', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, body })
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Proxy Error');
+  try {
+    const response = await fetch('/api/scout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, body })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || `Proxy Error: ${response.status}`);
+    }
+    
+    // Check for Groq-specific errors wrapped in 200
+    if (action === 'analyse' && data.error) {
+      throw new Error(`AI Error: ${data.error.message || JSON.stringify(data.error)}`);
+    }
+
+    return data;
+  } catch (err) {
+    throw new Error(err.message);
   }
-  return response.json();
 }
 
 // DOM Elements
@@ -116,6 +128,7 @@ function setupEventListeners() {
   });
 
   elements.backBtn.addEventListener('click', () => showView('home'));
+  elements.retryBtn.addEventListener('click', () => showView('home'));
 }
 
 function showView(viewName) {
@@ -163,7 +176,7 @@ function renderDisambiguation(query, results, originalContext) {
       <p>Select source to start Deep Research</p>
     </header>
     <div class="disambiguation-list">
-      ${results.map((r, i) => `
+      ${results.length === 0 ? '<p>No results found. Try a different name.</p>' : results.map((r, i) => `
         <div class="disambiguation-item" onclick="startOptimizedAnalysis('${query}', ${i}, '${originalContext}')">
           <h4>${r.title}</h4>
           <p>${r.url}</p>
@@ -183,12 +196,14 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
   showView('loading');
   elements.loadingCompanyName.textContent = query;
   
-  // Stage 1: Build Base Context
-  updateLoadingStep('Expanding company base context...');
-  let baseContext = originalContext ? `User Context: ${originalContext}\n\n` : '';
-  if (selectedIndex !== -1) baseContext += `Main Selection: ${lastSearchResults[selectedIndex].content}\n`;
-  
   try {
+    // Stage 1: Build Base Context
+    updateLoadingStep('Expanding company base context...');
+    let baseContext = originalContext ? `User Context: ${originalContext}\n\n` : '';
+    if (selectedIndex !== -1 && lastSearchResults[selectedIndex]) {
+      baseContext += `Main Selection: ${lastSearchResults[selectedIndex].content}\n`;
+    }
+    
     const baseData = await callProxy('search', {
       query: `${query} company business model product features operations history`,
       search_depth: "advanced",
@@ -198,15 +213,19 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
 
     // Stage 2: Unified Deep Hunt
     updateLoadingStep('Consolidating deep-hunt queries...');
-    const huntQueryResponse = await callProxy('analyse', {
+    const huntResponse = await callProxy('analyse', {
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: "You are a senior analyst. Based on this context, generate ONE highly targeted search query to find the 'Missing Deep Pillars': Unit Economics specifics, evidence of Flywheels, and the Psychological Hook/Functional needs. Output ONLY the query string." },
         { role: "user", content: baseContext.substring(0, 8000) }
       ]
     });
-    const huntQueryResponseData = await huntQueryResponse;
-    const targetedQuery = huntQueryResponseData.choices[0].message.content.trim().replace(/^"|"$/g, '');
+    
+    if (!huntResponse.choices || !huntResponse.choices[0]) {
+      throw new Error("AI failed to generate a hunt query. Check API status.");
+    }
+    
+    const targetedQuery = huntResponse.choices[0].message.content.trim().replace(/^"|"$/g, '');
 
     updateLoadingStep(`Hunting for: ${targetedQuery.toLowerCase().substring(0, 40)}...`);
     const huntData = await callProxy('search', {
@@ -215,7 +234,6 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
       max_results: 8
     });
     
-    // Combine & Truncate to avoid overload
     let finalContext = "DEEP HUNT EVIDENCE:\n" + (huntData.results || []).map(r => r.content).join('\n') + 
                        "\n\nBASE COMPANY CONTEXT:\n" + baseContext;
     
@@ -223,7 +241,7 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
 
     // Stage 3: Final First-Principles Teardown
     updateLoadingStep('Finalizing deep analysis...');
-    const finalData = await callProxy('analyse', {
+    const finalResponse = await callProxy('analyse', {
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
@@ -233,7 +251,11 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
       temperature: 0.0
     });
 
-    const reportData = JSON.parse(finalData.choices[0].message.content);
+    if (!finalResponse.choices || !finalResponse.choices[0]) {
+      throw new Error("AI failed to generate final teardown. Check API status.");
+    }
+
+    const reportData = JSON.parse(finalResponse.choices[0].message.content);
 
     saveReport(reportData);
     renderReport(reportData);
@@ -241,7 +263,7 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
 
   } catch (err) {
     console.error(err);
-    elements.errorMessage.textContent = `Optimized Search Error: ${err.message}`;
+    elements.errorMessage.textContent = `Analysis Failed: ${err.message}`;
     showView('error');
   }
 }
