@@ -1,7 +1,6 @@
 /**
  * Scout PWA - app.js
- * v10: Token-Saver Optimization for Free Tier.
- * Uses 8B model for internal steps & tighter context management.
+ * v11: Brand-First Sorting & Disambiguation Logic.
  */
 
 const SYSTEM_PROMPT = `You are a senior operator and cynical venture investor. You provide blunt, deep, high-conviction teardowns using a first-principles mechanism.
@@ -56,7 +55,6 @@ async function callProxy(action, body) {
     const data = await response.json();
     
     if (!response.ok) {
-      // Ensure error is a string even if it's an object
       const errorMsg = typeof data.error === 'object' ? JSON.stringify(data.error) : (data.error || `Error ${response.status}`);
       throw new Error(errorMsg);
     }
@@ -108,7 +106,9 @@ function init() {
   const style = document.createElement('style');
   style.textContent = `
     .disambiguation-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem; }
-    .disambiguation-item { background: var(--panel); border: 1px solid var(--border); padding: 1rem; cursor: pointer; text-align: left; transition: 0.2s; }
+    .disambiguation-item { background: var(--panel); border: 1px solid var(--border); padding: 1rem; cursor: pointer; text-align: left; transition: 0.2s; position: relative; overflow: hidden; }
+    .disambiguation-item.priority { border-color: var(--accent); background: rgba(255,255,255,0.03); }
+    .disambiguation-item.priority::after { content: 'PRIMARY'; position: absolute; top: 0; right: 0; background: var(--accent); color: #000; font-size: 0.6rem; padding: 2px 6px; font-weight: bold; font-family: var(--mono); }
     .disambiguation-item:hover { border-color: var(--text); }
     .disambiguation-item h4 { margin-bottom: 0.25rem; font-family: var(--sans); font-weight: 600; }
     .disambiguation-item p { font-size: 0.85rem; color: var(--text-dim); }
@@ -155,12 +155,27 @@ async function startResearchFlow(company, context) {
 
   try {
     const searchData = await callProxy('search', {
-      query: `${company} company details overview`,
+      query: `${company} company official website details`,
       search_depth: "basic",
-      max_results: 5
+      max_results: 6
     });
     
-    lastSearchResults = searchData.results || [];
+    let results = searchData.results || [];
+    
+    // Brand-First Sorting Logic
+    const companyClean = company.toLowerCase().replace(/[^a-z0-9]/g, '');
+    results.sort((a, b) => {
+      const aUrl = a.url.toLowerCase();
+      const bUrl = b.url.toLowerCase();
+      const aMatches = aUrl.includes(companyClean);
+      const bMatches = bUrl.includes(companyClean);
+      
+      if (aMatches && !bMatches) return -1;
+      if (!aMatches && bMatches) return 1;
+      return 0;
+    });
+
+    lastSearchResults = results;
     renderDisambiguation(company, lastSearchResults, context);
     showView('disambiguation');
 
@@ -172,19 +187,24 @@ async function startResearchFlow(company, context) {
 }
 
 function renderDisambiguation(query, results, originalContext) {
+  const companyClean = query.toLowerCase().replace(/[^a-z0-9]/g, '');
+  
   views.disambiguation.innerHTML = `
     <header class="home-header">
       <h1>Which ${query}?</h1>
       <p>Select source to start Deep Research</p>
     </header>
     <div class="disambiguation-list">
-      ${results.length === 0 ? '<p>No results found. Try a different name.</p>' : results.map((r, i) => `
-        <div class="disambiguation-item" onclick="startOptimizedAnalysis('${query}', ${i}, '${originalContext}')">
-          <h4>${r.title}</h4>
-          <p>${r.url}</p>
-          <p>${r.content.substring(0, 150)}...</p>
-        </div>
-      `).join('')}
+      ${results.length === 0 ? '<p>No results found. Try a different name.</p>' : results.map((r, i) => {
+        const isPriority = r.url.toLowerCase().includes(companyClean);
+        return `
+          <div class="disambiguation-item ${isPriority ? 'priority' : ''}" onclick="startOptimizedAnalysis('${query}', ${i}, '${originalContext}')">
+            <h4>${r.title}</h4>
+            <p>${r.url}</p>
+            <p>${r.content.substring(0, 150)}...</p>
+          </div>
+        `;
+      }).join('')}
       <div class="disambiguation-item" onclick="startOptimizedAnalysis('${query}', -1, '${originalContext}')">
         <h4>General/Multi-Source Research</h4>
         <p>Aggregate from all sources</p>
@@ -208,18 +228,18 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
     
     const baseData = await callProxy('search', {
       query: `${query} company business model product features operations`,
-      search_depth: "basic", // Faster, cheaper
-      max_results: 4 // Reduced results to save tokens
+      search_depth: "basic",
+      max_results: 4
     });
     baseContext += (baseData.results || []).map(r => r.content).join('\n\n');
 
     // Stage 2: Unified Deep Hunt (Using 8B model for token efficiency)
     updateLoadingStep('Consolidating deep-hunt queries...');
     const huntResponse = await callProxy('analyse', {
-      model: "llama-3.1-8b-instant", // CHEAPER MODEL
+      model: "llama-3.1-8b-instant",
       messages: [
         { role: "system", content: "You are a senior analyst. Based on this context, generate ONE highly targeted search query to find the 'Missing Deep Pillars': Unit Economics specifics, evidence of Flywheels, and the Psychological Hook. Output ONLY the query string." },
-        { role: "user", content: baseContext.substring(0, 5000) } // Trim context for brainstorming
+        { role: "user", content: baseContext.substring(0, 5000) }
       ]
     });
     
@@ -236,13 +256,12 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
       max_results: 5
     });
     
-    // Tighter truncation (12k chars total) to stay well under token limits
     let finalContext = "DEEP HUNT EVIDENCE:\n" + (huntData.results || []).map(r => r.content).join('\n') + 
                        "\n\nBASE COMPANY CONTEXT:\n" + baseContext;
     
     finalContext = finalContext.substring(0, 12000); 
 
-    // Stage 3: Final First-Principles Teardown (Keep 70B for high quality)
+    // Stage 3: Final First-Principles Teardown
     updateLoadingStep('Executing high-conviction teardown...');
     const finalResponse = await callProxy('analyse', {
       model: "llama-3.3-70b-versatile",
