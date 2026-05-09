@@ -1,6 +1,6 @@
 /**
  * Scout PWA - app.js
- * v16.10: Bugfix - Resolved fetch header type error.
+ * v16.11: Ultra-Dense Monochrome PDF.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -181,27 +181,31 @@ function handleDownloadPDF() {
   const container = document.getElementById('report-container');
   const app = document.getElementById('app');
   
-  // Enter PDF mode (B&W + Dense)
+  // Enter PDF mode (B&W + Ultra-Dense)
   app.classList.add('pdf-mode');
 
-  const opt = {
-    margin: 0,
-    filename: `Scout_Memo_${currentReport.company.replace(/\s+/g, '_')}.pdf`,
-    image: { type: 'jpeg', quality: 1.0 },
-    html2canvas: { 
-      scale: 3, 
-      useCORS: true, 
-      backgroundColor: '#ffffff',
-      letterRendering: true
-    },
-    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-  };
+  // Allow 100ms for the browser to apply the monochrome styles
+  setTimeout(() => {
+    const opt = {
+      margin: 0,
+      filename: `Scout_Memo_${currentReport.company.replace(/\s+/g, '_')}.pdf`,
+      image: { type: 'jpeg', quality: 1.0 },
+      html2canvas: { 
+        scale: 2.5, 
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        letterRendering: true,
+        scrollY: 0
+      },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+      pagebreak: { mode: 'avoid-all' }
+    };
 
-  html2pdf().set(opt).from(container).save().then(() => {
-    // Exit PDF mode
-    app.classList.remove('pdf-mode');
-  });
+    html2pdf().set(opt).from(container).save().then(() => {
+      // Exit PDF mode
+      app.classList.remove('pdf-mode');
+    });
+  }, 100);
 }
 
 function showView(viewName) {
