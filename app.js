@@ -1,7 +1,7 @@
 /**
  * Scout PWA - app.js
- * v15: Outreach Engine Integration.
- * Added 3-step outreach generation framework.
+ * v16: Voice Fingerprint Integration.
+ * Anchoring everything in human truth, fieldwork, and zero jargon.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -54,35 +54,26 @@ const OUTREACH_PROMPT = `You have been given:
 1. A company research memo (Deep intelligence on their model, gaps, and moats)
 2. A resume (Your proof of work)
 
-Your job is to write a high-conviction outreach message FROM the person in the resume TO a key stakeholder at the company.
+Your job is to write a high-conviction message FROM the person in the resume TO a key stakeholder at the company.
+
+VOICE FINGERPRINT (CRITICAL):
+- START FROM A HUMAN TRUTH: Do not start with a feature or a job. Start with what a person becomes or a human insight. (e.g., "making it easier for me to be a good husband" vs "algorithm updates").
+- SHOW YOUR WORK: Don't just state a conclusion. Walk them through your discovery. Use phrases like "let me map out this experience" or "let me deep dive into why this feels off." 
+- PERSONAL FIELDWORK: Reference what you actually did. "I went and saw", "I interviewed riders", "I mapped the flow." Never "research shows."
+- SHORT DECLARATIVE RHYTHM: Use punchy sentences to make points. "This is why I step out. Not for the cafe. For this."
+- ZERO JARGON: No "leverage", "synergies", "alignment." Use plain, heavy words.
+- CONVERSATIONAL FRAMEWORKS: Use logic/bullet points but wrap them in human prose like "I'd like to add context here" or "Let us decouple the words."
 
 STRUCTURE:
-1. HUMAN OBSERVATION: Signal you've done deep research. Mention a specific nuance of their business model or a structural shift you noticed (e.g., "noticed you're moving from X to Y" or "saw the unit economics shift in Z").
-2. THE PROBLEM BRIDGE: Identify ONE specific structural gap or "hard problem" from the memo that is currently blocking them or is a high-priority risk.
-3. THE PROOF: Explain how you solved exactly this at a previous company. Lead with the mechanism and the metric. Show, don't tell.
-4. THE ASK: A low-friction, casual question to start a technical conversation.
-
-VOICE RULES (STRICT):
-- No buzzwords. No "I'm passionate about." No "I'd love to connect."
-- Short declarative sentences. Write like a person thinking out loud.
-- Use fieldwork language: "went and mapped", "interviewed", "built the mechanism."
-- If there is a metric, lead with it.
-- Format: requested format (LinkedIn DM: 80-120 words or Email: 150-200 words).
-
-STEP 1 — THE HOOK (Internal Reasoning)
-One sentence: "[Company] has [specific problem]. I solved this at [Previous Company] by [mechanism], resulting in [metric]."
-
-STEP 2 — THE MESSAGE (The Draft)
-Write the message following the structure and voice rules above. Signal research depth in the opening.
-
-STEP 3 — THE BET (Strategy)
-2-3 sentences on why this will land. What specific signal in the memo makes this "problem" urgent for them right now?
+- Opening: The Human Truth + Research Signal.
+- Body: Walkthrough of the structural gap found in the memo + your fieldwork proof (from resume).
+- Closing: A low-friction, casual question to start a technical conversation.
 
 OUTPUT JSON:
 {
-  "hook": "string",
-  "message": "string",
-  "why": "string"
+  "hook": "Internal reasoning: The core problem-solution bridge",
+  "message": "The final message draft. No 'Step 1' or 'Step 2' labels. Just the prose/mail content.",
+  "why": "Why this specific hook/truth will land with this founder."
 }`;
 
 // Helper: Call Vercel Proxy
@@ -156,7 +147,7 @@ function init() {
 
   renderRecentSearches();
   setupEventListeners();
-  console.log("Scout Initialized (v15)");
+  console.log("Scout Initialized (v16)");
 }
 
 function setupEventListeners() {
@@ -354,13 +345,13 @@ function renderOutreachResult(data) {
   elements.outreachResult.classList.remove('hidden');
   elements.outreachResult.innerHTML = `
     <div class="outreach-result-card">
-      <div class="memo-label">Step 1 // THE HOOK</div>
+      <div class="memo-label">INTELLIGENCE HOOK</div>
       <div class="memo-content" style="font-weight:700; color:var(--accent); margin-bottom:2rem;">${data.hook}</div>
       
-      <div class="memo-label">Step 2 // THE MESSAGE <span class="copy-badge" onclick="copyText('outreach-msg')">COPY</span></div>
-      <div id="outreach-msg" class="memo-content" style="background:rgba(255,255,255,0.03); padding:1.5rem; border-radius:8px; border:1px solid var(--border); white-space:pre-wrap;">${data.message}</div>
+      <div class="memo-label">MISSION MESSAGE <span class="copy-badge" onclick="copyText('outreach-msg')">COPY</span></div>
+      <div id="outreach-msg" class="memo-content" style="background:rgba(255,255,255,0.03); padding:1.5rem; border-radius:8px; border:1px solid var(--border); white-space:pre-wrap; line-height:1.8;">${data.message}</div>
       
-      <div class="memo-label" style="margin-top:2rem;">Step 3 // THE BET</div>
+      <div class="memo-label" style="margin-top:2rem;">THE BET</div>
       <div class="memo-content" style="font-style:italic; color:var(--text-dim);">${data.why}</div>
     </div>
   `;
