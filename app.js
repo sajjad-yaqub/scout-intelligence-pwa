@@ -1,7 +1,7 @@
 /**
  * Scout PWA - app.js
- * v14: Resilience & Event Fix.
- * Fixed DOM selection race conditions and button event mapping.
+ * v15: Outreach Engine Integration.
+ * Added 3-step outreach generation framework.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -50,6 +50,39 @@ OUTPUT JSON:
 
 TONE: Short sentences. Direct verdicts. Praise where real. Critique where needed. No balance for the sake of balance.`;
 
+const OUTREACH_PROMPT = `You have been given:
+1. A company research memo
+2. A resume
+
+Your job is to write one outreach message. Work through three steps.
+
+STEP 1 — FIND THE HOOK
+From the memo, find the ONE gap that the resume most directly addresses. It must be:
+- Specific — not "growth" in general, but which part of the funnel, which user, which metric
+- Provable — there is a direct proof point in the resume: a metric, a mechanism, a 0→1 build
+- Urgent — it is structural or high-priority for the company, not a nice-to-have
+
+STEP 2 — WRITE THE MESSAGE
+Write a message in the requested format (LinkedIn DM: 80-120 words or Email: 150-200 words).
+Voice rules:
+- Open with a human observation about their business. No "I came across your profile."
+- One specific thing from the resume that is directly relevant. Lead with what was built.
+- End with a low-friction ask. No "I'd love to explore opportunities."
+- No buzzwords. Short declarative sentences.
+- Write like a person thinking out loud. Not a cover letter.
+- Show fieldwork (mapped, interviewed, built) instead of passive leadership.
+- If there is a metric, lead with it.
+
+STEP 3 — EXPLAIN THE BET
+2-3 sentences on why this will land based on signals in the memo.
+
+OUTPUT JSON:
+{
+  "hook": "string",
+  "message": "string",
+  "why": "string"
+}`;
+
 // Helper: Call Vercel Proxy
 async function callProxy(action, body) {
   try {
@@ -80,6 +113,7 @@ async function callProxy(action, body) {
 let views = {};
 let elements = {};
 let lastSearchResults = [];
+let currentReport = null;
 
 // Initialize
 function init() {
@@ -89,6 +123,7 @@ function init() {
     report: document.getElementById('report-screen'),
     loading: document.getElementById('loading-screen'),
     error: document.getElementById('error-screen'),
+    outreach: document.getElementById('outreach-screen'),
     disambiguation: document.createElement('section')
   };
   
@@ -108,12 +143,18 @@ function init() {
     backBtn: document.getElementById('back-to-home'),
     loadingCompanyName: document.getElementById('loading-company-name'),
     errorMessage: document.getElementById('error-message'),
-    retryBtn: document.getElementById('retry-btn')
+    retryBtn: document.getElementById('retry-btn'),
+    
+    // Outreach Elements
+    backToReport: document.getElementById('back-to-report'),
+    resumeText: document.getElementById('resume-text'),
+    generateOutreachBtn: document.getElementById('generate-outreach-btn'),
+    outreachResult: document.getElementById('outreach-result')
   };
 
   renderRecentSearches();
   setupEventListeners();
-  console.log("Scout Initialized (v14)");
+  console.log("Scout Initialized (v15)");
 }
 
 function setupEventListeners() {
@@ -134,6 +175,9 @@ function setupEventListeners() {
 
   if (elements.backBtn) elements.backBtn.addEventListener('click', () => showView('home'));
   if (elements.retryBtn) elements.retryBtn.addEventListener('click', () => showView('home'));
+  
+  if (elements.backToReport) elements.backToReport.addEventListener('click', () => showView('report'));
+  if (elements.generateOutreachBtn) elements.generateOutreachBtn.addEventListener('click', handleGenerateOutreach);
 }
 
 function showView(viewName) {
@@ -261,6 +305,7 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
     });
 
     const reportData = JSON.parse(finalResponse.choices[0].message.content);
+    currentReport = reportData;
     saveReport(reportData);
     renderReport(reportData);
     showView('report');
@@ -270,6 +315,62 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
     if (elements.errorMessage) elements.errorMessage.textContent = `Analysis Failed: ${err.message}`;
     showView('error');
   }
+}
+
+async function handleGenerateOutreach() {
+  const resume = elements.resumeText.value.trim();
+  const format = document.querySelector('input[name="format"]:checked').value;
+  
+  if (!resume) return alert("Please paste a resume first.");
+  if (!currentReport) return alert("No company data found.");
+
+  elements.generateOutreachBtn.textContent = "Processing Intelligence...";
+  elements.generateOutreachBtn.disabled = true;
+
+  try {
+    const response = await callProxy('analyse', {
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: OUTREACH_PROMPT },
+        { role: "user", content: `COMPANY MEMO:\n${JSON.stringify(currentReport)}\n\nRESUME:\n${resume}\n\nFORMAT: ${format}` }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.0
+    });
+
+    const result = JSON.parse(response.choices[0].message.content);
+    renderOutreachResult(result);
+  } catch (err) {
+    alert("Outreach generation failed: " + err.message);
+  } finally {
+    elements.generateOutreachBtn.textContent = "Generate Mission Message";
+    elements.generateOutreachBtn.disabled = false;
+  }
+}
+
+function renderOutreachResult(data) {
+  elements.outreachResult.classList.remove('hidden');
+  elements.outreachResult.innerHTML = `
+    <div class="outreach-result-card">
+      <div class="memo-label">Step 1 // THE HOOK</div>
+      <div class="memo-content" style="font-weight:700; color:var(--accent); margin-bottom:2rem;">${data.hook}</div>
+      
+      <div class="memo-label">Step 2 // THE MESSAGE <span class="copy-badge" onclick="copyText('outreach-msg')">COPY</span></div>
+      <div id="outreach-msg" class="memo-content" style="background:rgba(255,255,255,0.03); padding:1.5rem; border-radius:8px; border:1px solid var(--border); white-space:pre-wrap;">${data.message}</div>
+      
+      <div class="memo-label" style="margin-top:2rem;">Step 3 // THE BET</div>
+      <div class="memo-content" style="font-style:italic; color:var(--text-dim);">${data.why}</div>
+    </div>
+  `;
+  window.scrollTo({ top: elements.outreachResult.offsetTop - 100, behavior: 'smooth' });
+}
+
+function copyText(id) {
+  const text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text);
+  const badge = document.querySelector('.copy-badge');
+  badge.textContent = "COPIED!";
+  setTimeout(() => badge.textContent = "COPY", 2000);
 }
 
 function saveReport(report) {
@@ -292,6 +393,7 @@ function renderRecentSearches() {
     chip.className = 'chip';
     chip.textContent = report.company;
     chip.addEventListener('click', () => {
+      currentReport = report;
       renderReport(report);
       showView('report');
     });
@@ -421,13 +523,25 @@ function renderReport(data) {
         <div class="memo-title">Final Verdict</div>
         <div class="memo-content" style="font-weight: 500; font-size: 1.25rem; line-height: 1.4;">${m.final_verdict}</div>
       </div>
+
+      <div style="margin-top: 4rem; padding-bottom: 6rem; text-align: center;">
+        <button id="trigger-outreach-btn" class="btn-primary" style="background: var(--accent); color: #000; width: 100%; max-width: 400px;">
+          Draft Outreach Message
+        </button>
+      </div>
     `;
+    
+    // Add event listener to the dynamically rendered button
+    document.getElementById('trigger-outreach-btn').addEventListener('click', () => {
+      showView('outreach');
+    });
   }
 }
 
-// Global exposure for onclick handlers
+// Global exposure
 window.startOptimizedAnalysis = startOptimizedAnalysis;
 window.showView = showView;
+window.copyText = copyText;
 
 // Run Init when ready
 if (document.readyState === 'loading') {
