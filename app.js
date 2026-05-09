@@ -1,47 +1,54 @@
 /**
  * Scout PWA - app.js
- * v11: Brand-First Sorting & Disambiguation Logic.
+ * v12: The Sharp Operator Memo.
+ * Exact 13-step framework, blunt investor persona, memo-style UI.
  */
 
-const SYSTEM_PROMPT = `You are a senior operator and cynical venture investor. You provide blunt, deep, high-conviction teardowns using a first-principles mechanism.
+const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
+You think from first principles. You are blunt. You do not hedge.
 
-ANALYTIC MECHANISM:
-- HUMAN NATURE: Deconstruct functional, emotional, and social needs.
-- THE ENGINE: Analyse the "product that makes the product" (Ops/Distribution).
-- FLYWHEEL: Identify the growth loops and self-reinforcing moats.
-- MESSAGE/CHANNEL: Evaluate the acquisition hack vs brand authority.
+FRAMEWORK:
+Execute this exact 13-step framework. For each step, use the provided research data to reason. State findings and verdicts clearly.
 
-RULES:
-1. TOTAL CONVICTION. No hedging. No "needs more data". 
-2. If info is missing, INFER IT from category norms and psychological first principles.
-3. BE ROBOTICALLY ANALYTICAL.
+1. What they actually do (plain sentences, translate marketing fluff).
+2. Claimed problem (how they frame it).
+3. The exact user (precision over generalisation).
+4. Real problem stack (rank top 3-5 real problems).
+5. User-problem fit (Verdict: ✅ Strong / ⚠️ Weak / ❌ Wrong).
+6. Fit Gap (If weak/wrong, specify X vs Y).
+7. Current solutions (manual, Excel, incumbents). Verdict: ✅ Broken / ⚠️ Imperfect / ❌ Good enough.
+8. Monetary upside (Value vs Cost). Verdict: ✅ Clear / ⚠️ Hard to monetise / ❌ Nice-to-have.
+9. Market size (Bottom-up calculation).
+10. CM2/CM3 logic (Unit profitability & CAC). Verdict: ✅ Positive / ⚠️ Ugly / ❌ Structural problem.
+11. Defensibility (Network effects, data moat, switching costs, brand, workflow lock-in).
+12. Moat Reality (Plain assessment of structural hardness).
+13. Gaps table (❌/⚠️ findings re-framed).
 
-JSON Schema:
+OUTPUT JSON:
 {
   "company": "string",
   "tagline": "string",
   "data_quality_score": 0-100,
-  "tldr": {
-    "verdict": "Back | Pass | Watch",
-    "verdict_reason": "string",
-    "strengths": ["string"],
-    "risks": ["string"]
-  },
-  "sections": [
-    { "id": "what_they_do", "title": "What They Do", "finding": "string", "status": null },
-    { "id": "claimed_problem", "title": "Claimed Problem", "finding": "string", "status": null },
-    { "id": "user", "title": "The User", "finding": "string", "status": null },
-    { "id": "real_problem_stack", "title": "Real Problem Stack", "problems": ["string"], "status": null },
-    { "id": "user_problem_fit", "title": "User–Problem Fit", "finding": "string", "status": "strong | weak | wrong" },
-    { "id": "current_solutions", "title": "Current Solutions", "finding": "string", "status": "strong | weak | wrong" },
-    { "id": "monetisation", "title": "Monetisation", "finding": "string", "status": "strong | weak | wrong" },
-    { "id": "market_size", "title": "Market Size", "number": "string", "finding": "string", "status": null },
-    { "id": "unit_economics", "title": "Unit Economics", "finding": "string", "status": "strong | weak | wrong" },
-    { "id": "defensibility", "title": "Defensibility", "finding": "string", "scorecard": [], "status": "strong | weak | wrong" }
-  ],
-  "gaps_table": [{ "gap": "string", "fix": "string" }],
-  "overall_verdict": "string"
-}`;
+  "overall_verdict_short": "Back | Pass | Watch",
+  "memo": {
+    "what_they_do": "string",
+    "claimed_problem": "string",
+    "the_user": "string",
+    "real_problem_stack": ["string"],
+    "user_problem_fit_verdict": { "verdict": "string", "reason": "string" },
+    "fit_gap_analysis": "string",
+    "current_solutions": { "verdict": "string", "alternatives": "string" },
+    "monetisation_logic": { "verdict": "string", "upside": "string" },
+    "market_size_bottom_up": "string",
+    "unit_economics_read": { "verdict": "string", "logic": "string" },
+    "defensibility_stack": { "verdict": "string", "moat_details": "string" },
+    "whats_working": "string",
+    "gaps_table": [{ "gap": "string", "fix": "string" }],
+    "final_verdict": "string"
+  }
+}
+
+TONE: Short sentences. Direct verdicts. Praise where real. Critique where needed. No balance for the sake of balance.`;
 
 // Helper: Call Vercel Proxy
 async function callProxy(action, body) {
@@ -113,6 +120,22 @@ function init() {
     .disambiguation-item h4 { margin-bottom: 0.25rem; font-family: var(--sans); font-weight: 600; }
     .disambiguation-item p { font-size: 0.85rem; color: var(--text-dim); }
     .loading-step { font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem; font-family: var(--mono); }
+    
+    /* Memo Styles */
+    .memo-section { border-bottom: 1px solid var(--border); padding: 2rem 0; }
+    .memo-section:last-child { border-bottom: none; }
+    .memo-label { font-family: var(--mono); font-size: 0.7rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .memo-title { font-family: var(--sans); font-size: 1.25rem; font-weight: 700; color: var(--text); margin-bottom: 1rem; }
+    .memo-content { font-size: 1rem; line-height: 1.6; color: var(--text); }
+    .memo-verdict { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 700; margin-bottom: 1rem; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.9rem; }
+    .memo-verdict.positive { background: rgba(46, 213, 115, 0.1); color: #2ed573; }
+    .memo-verdict.warning { background: rgba(255, 165, 2, 0.1); color: #ffa502; }
+    .memo-verdict.negative { background: rgba(255, 71, 87, 0.1); color: #ff4757; }
+    .memo-list { margin-top: 1rem; padding-left: 1.5rem; }
+    .memo-list li { margin-bottom: 0.5rem; list-style-type: decimal; }
+    .memo-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .memo-table th { text-align: left; font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim); padding: 0.5rem; border-bottom: 1px solid var(--border); }
+    .memo-table td { padding: 1rem 0.5rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
   `;
   document.head.appendChild(style);
 }
@@ -150,29 +173,22 @@ function updateLoadingStep(step) {
 }
 
 async function startResearchFlow(company, context) {
-  updateLoadingStep('Broad search initiated...');
+  updateLoadingStep('Scanning market landscape...');
   showView('loading');
 
   try {
     const searchData = await callProxy('search', {
-      query: `${company} company official website details`,
+      query: `${company} company official website and business profile`,
       search_depth: "basic",
       max_results: 6
     });
     
     let results = searchData.results || [];
-    
-    // Brand-First Sorting Logic
     const companyClean = company.toLowerCase().replace(/[^a-z0-9]/g, '');
     results.sort((a, b) => {
-      const aUrl = a.url.toLowerCase();
-      const bUrl = b.url.toLowerCase();
-      const aMatches = aUrl.includes(companyClean);
-      const bMatches = bUrl.includes(companyClean);
-      
-      if (aMatches && !bMatches) return -1;
-      if (!aMatches && bMatches) return 1;
-      return 0;
+      const aMatches = a.url.toLowerCase().includes(companyClean);
+      const bMatches = b.url.toLowerCase().includes(companyClean);
+      return bMatches - aMatches;
     });
 
     lastSearchResults = results;
@@ -188,26 +204,22 @@ async function startResearchFlow(company, context) {
 
 function renderDisambiguation(query, results, originalContext) {
   const companyClean = query.toLowerCase().replace(/[^a-z0-9]/g, '');
-  
   views.disambiguation.innerHTML = `
     <header class="home-header">
       <h1>Which ${query}?</h1>
-      <p>Select source to start Deep Research</p>
+      <p>Target identification required for Operator Memo</p>
     </header>
     <div class="disambiguation-list">
-      ${results.length === 0 ? '<p>No results found. Try a different name.</p>' : results.map((r, i) => {
-        const isPriority = r.url.toLowerCase().includes(companyClean);
-        return `
-          <div class="disambiguation-item ${isPriority ? 'priority' : ''}" onclick="startOptimizedAnalysis('${query}', ${i}, '${originalContext}')">
-            <h4>${r.title}</h4>
-            <p>${r.url}</p>
-            <p>${r.content.substring(0, 150)}...</p>
-          </div>
-        `;
-      }).join('')}
+      ${results.length === 0 ? '<p>No results found.</p>' : results.map((r, i) => `
+        <div class="disambiguation-item ${r.url.toLowerCase().includes(companyClean) ? 'priority' : ''}" onclick="startOptimizedAnalysis('${query}', ${i}, '${originalContext}')">
+          <h4>${r.title}</h4>
+          <p>${r.url}</p>
+          <p>${r.content.substring(0, 150)}...</p>
+        </div>
+      `).join('')}
       <div class="disambiguation-item" onclick="startOptimizedAnalysis('${query}', -1, '${originalContext}')">
-        <h4>General/Multi-Source Research</h4>
-        <p>Aggregate from all sources</p>
+        <h4>General Aggregated Research</h4>
+        <p>No specific source target</p>
       </div>
     </div>
     <button class="btn-text" style="margin-top: 2rem" onclick="showView('home')">← Back to search</button>
@@ -219,66 +231,53 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
   elements.loadingCompanyName.textContent = query;
   
   try {
-    // Stage 1: Build Base Context
-    updateLoadingStep('Expanding base context (Token-Saver Active)...');
+    updateLoadingStep('Executing Two-Stage Agentic Hunt...');
     let baseContext = originalContext ? `User Context: ${originalContext}\n\n` : '';
     if (selectedIndex !== -1 && lastSearchResults[selectedIndex]) {
       baseContext += `Main Selection: ${lastSearchResults[selectedIndex].content}\n`;
     }
     
     const baseData = await callProxy('search', {
-      query: `${query} company business model product features operations`,
+      query: `${query} business model operations product features target customers`,
       search_depth: "basic",
-      max_results: 4
+      max_results: 5
     });
     baseContext += (baseData.results || []).map(r => r.content).join('\n\n');
 
-    // Stage 2: Unified Deep Hunt (Using 8B model for token efficiency)
-    updateLoadingStep('Consolidating deep-hunt queries...');
+    // Recursive Step
+    updateLoadingStep('Generating deep-pillar hunt query...');
     const huntResponse = await callProxy('analyse', {
       model: "llama-3.1-8b-instant",
       messages: [
-        { role: "system", content: "You are a senior analyst. Based on this context, generate ONE highly targeted search query to find the 'Missing Deep Pillars': Unit Economics specifics, evidence of Flywheels, and the Psychological Hook. Output ONLY the query string." },
+        { role: "system", content: "You are a sharp analyst. Generate ONE search query to uncover: 1. Specific Unit Economics/Pricing 2. Flywheel evidence 3. Real switching costs/lock-in. Output ONLY the query." },
         { role: "user", content: baseContext.substring(0, 5000) }
       ]
     });
-    
-    if (!huntResponse.choices || !huntResponse.choices[0]) {
-      throw new Error("AI failed to generate a hunt query.");
-    }
-    
     const targetedQuery = huntResponse.choices[0].message.content.trim().replace(/^"|"$/g, '');
 
-    updateLoadingStep(`Hunting for: ${targetedQuery.toLowerCase().substring(0, 30)}...`);
+    updateLoadingStep(`Hunting for truth: ${targetedQuery.toLowerCase().substring(0, 30)}...`);
     const huntData = await callProxy('search', {
       query: `${query} ${targetedQuery}`,
       search_depth: "basic",
       max_results: 5
     });
     
-    let finalContext = "DEEP HUNT EVIDENCE:\n" + (huntData.results || []).map(r => r.content).join('\n') + 
-                       "\n\nBASE COMPANY CONTEXT:\n" + baseContext;
-    
-    finalContext = finalContext.substring(0, 12000); 
+    let finalContext = "DEEP PILLAR EVIDENCE:\n" + (huntData.results || []).map(r => r.content).join('\n') + 
+                       "\n\nBASE CONTEXT:\n" + baseContext;
+    finalContext = finalContext.substring(0, 15000); 
 
-    // Stage 3: Final First-Principles Teardown
-    updateLoadingStep('Executing high-conviction teardown...');
+    updateLoadingStep('Writing Operator Memo (13-step framework)...');
     const finalResponse = await callProxy('analyse', {
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Full Research Data:\n${finalContext}` }
+        { role: "user", content: `Research Data:\n${finalContext}` }
       ],
       response_format: { type: "json_object" },
       temperature: 0.0
     });
 
-    if (!finalResponse.choices || !finalResponse.choices[0]) {
-      throw new Error("AI failed to generate final teardown.");
-    }
-
     const reportData = JSON.parse(finalResponse.choices[0].message.content);
-
     saveReport(reportData);
     renderReport(reportData);
     showView('report');
@@ -315,82 +314,110 @@ function renderRecentSearches() {
   });
 }
 
+function getVerdictClass(verdict) {
+  if (!verdict) return '';
+  const v = verdict.toLowerCase();
+  if (v.includes('✅') || v.includes('strong') || v.includes('positive') || v.includes('broken')) return 'positive';
+  if (v.includes('⚠️') || v.includes('weak') || v.includes('ugly') || v.includes('imperfect')) return 'warning';
+  if (v.includes('❌') || v.includes('wrong') || v.includes('negative') || v.includes('enough')) return 'negative';
+  return '';
+}
+
 function renderReport(data) {
   elements.reportHeader.textContent = data.company;
-  elements.reportContainer.innerHTML = '';
-
-  const tldr = data.tldr;
-  const verdictClass = tldr.verdict.toLowerCase().includes('back') ? 'back' : 
-                       tldr.verdict.toLowerCase().includes('pass') ? 'pass' : 'interesting';
+  const m = data.memo;
   
-  const tldrEl = document.createElement('div');
-  tldrEl.className = `card tldr-card ${verdictClass}`;
-  tldrEl.innerHTML = `
-    <div class="tldr-header">
-      <div class="tldr-title">
-        <h2>${data.company}</h2>
-        <p>${data.tagline}</p>
-        <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); margin-top: 0.5rem">Intelligence Quality: ${data.data_quality_score}/100</div>
+  elements.reportContainer.innerHTML = `
+    <div class="memo-header" style="margin-bottom: 3rem;">
+      <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--accent); margin-bottom: 1rem;">// CONFIDENTIAL OPERATOR MEMO</div>
+      <h1 style="font-size: 3rem; font-weight: 800; line-height: 1;">${data.company}</h1>
+      <p style="font-size: 1.25rem; color: var(--text-dim); margin-top: 1rem;">${data.tagline}</p>
+      <div style="margin-top: 2rem; display: flex; gap: 1rem; align-items: center;">
+        <div class="pill ${getVerdictClass(data.overall_verdict_short)}">${data.overall_verdict_short}</div>
+        <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim);">IQ: ${data.data_quality_score}/100</div>
       </div>
-      <div class="pill ${verdictClass}">${tldr.verdict}</div>
     </div>
-    <div class="verdict-reason">${tldr.verdict_reason}</div>
-    <div class="columns">
-      <div class="col">
-        <h4>Strengths</h4>
-        <ul>${tldr.strengths.map(s => `<li><span class="icon-check">✓</span> ${s}</li>`).join('')}</ul>
-      </div>
-      <div class="col">
-        <h4>Risks</h4>
-        <ul>${tldr.risks.map(r => `<li><span class="icon-risk">!</span> ${r}</li>`).join('')}</ul>
-      </div>
+
+    <div class="memo-section">
+      <div class="memo-label">Step 1 // Mechanism</div>
+      <div class="memo-title">What they do</div>
+      <div class="memo-content">${m.what_they_do}</div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-label">Step 2 // Narrative</div>
+      <div class="memo-title">Claimed Problem</div>
+      <div class="memo-content">${m.claimed_problem}</div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-label">Step 3 // ICP</div>
+      <div class="memo-title">The User</div>
+      <div class="memo-content">${m.the_user}</div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-label">Step 4 // Ground Truth</div>
+      <div class="memo-title">Real user problem stack</div>
+      <ul class="memo-list">
+        ${m.real_problem_stack.map(p => `<li>${p}</li>`).join('')}
+      </ul>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-label">Step 5 & 6 // Problem Fit</div>
+      <div class="memo-title">User-Problem Fit Verdict</div>
+      <div class="memo-verdict ${getVerdictClass(m.user_problem_fit_verdict.verdict)}">${m.user_problem_fit_verdict.verdict}</div>
+      <div class="memo-content">${m.user_problem_fit_verdict.reason}</div>
+      ${m.fit_gap_analysis ? `<div class="memo-content" style="margin-top: 1rem; padding: 1rem; background: rgba(255,71,87,0.05); border-left: 3px solid #ff4757;">${m.fit_gap_analysis}</div>` : ''}
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-label">Step 7 // Alternatives</div>
+      <div class="memo-title">How users solve it today</div>
+      <div class="memo-verdict ${getVerdictClass(m.current_solutions.verdict)}">${m.current_solutions.verdict}</div>
+      <div class="memo-content">${m.current_solutions.alternatives}</div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-label">Step 8 & 9 // Economics</div>
+      <div class="memo-title">Monetisation & Market Size</div>
+      <div class="memo-verdict ${getVerdictClass(m.monetisation_logic.verdict)}">${m.monetisation_logic.verdict}</div>
+      <div class="memo-content"><strong>Value Prop:</strong> ${m.monetisation_logic.upside}</div>
+      <div class="memo-content" style="margin-top: 1rem;"><strong>Bottom-up Size:</strong> ${m.market_size_bottom_up}</div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-label">Step 10 // Unit Economics</div>
+      <div class="memo-title">Unit economics read</div>
+      <div class="memo-verdict ${getVerdictClass(m.unit_economics_read.verdict)}">${m.unit_economics_read.verdict}</div>
+      <div class="memo-content">${m.unit_economics_read.logic}</div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-label">Step 11 & 12 // Moats</div>
+      <div class="memo-title">Defensibility</div>
+      <div class="memo-verdict ${getVerdictClass(m.defensibility_stack.verdict)}">${m.defensibility_stack.verdict}</div>
+      <div class="memo-content">${m.defensibility_stack.moat_details}</div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-label">Step 13 // Strategic Gap Resolution</div>
+      <div class="memo-title">Gaps and what to do about them</div>
+      <table class="memo-table">
+        <thead><tr><th>GAP</th><th>RIGHT FIX</th></tr></thead>
+        <tbody>
+          ${m.gaps_table.map(g => `<tr><td>${g.gap}</td><td>${g.fix}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="memo-section" style="background: var(--panel); padding: 2rem; border-radius: 8px; margin-top: 4rem;">
+      <div class="memo-label">Final Conclusion</div>
+      <div class="memo-title">Overall Verdict</div>
+      <div class="memo-content" style="font-weight: 500; font-size: 1.1rem;">${m.final_verdict}</div>
     </div>
   `;
-  elements.reportContainer.appendChild(tldrEl);
-
-  const grid = document.createElement('div');
-  grid.className = 'report-grid';
-  
-  data.sections.forEach(section => {
-    const card = document.createElement('div');
-    card.className = 'card section-card';
-    
-    let badge = '—';
-    if (section.status === 'strong') badge = '✅ Strong';
-    if (section.status === 'weak') badge = '⚠️ Weak';
-    if (section.status === 'wrong') badge = '❌ Problem';
-
-    let contentHTML = `<p class="finding">${section.finding}</p>`;
-    if (section.problems) {
-      contentHTML += `<ol class="problems-list">${section.problems.map(p => `<li>${p}</li>`).join('')}</ol>`;
-    }
-    if (section.id === 'market_size' && section.number) {
-      contentHTML = `<div class="number-callout">${section.number}</div>` + contentHTML;
-    }
-
-    card.innerHTML = `
-      <div class="card-header">
-        <h3>${section.title}</h3>
-        <span class="status-badge">${badge}</span>
-      </div>
-      ${contentHTML}
-    `;
-    grid.appendChild(card);
-  });
-  elements.reportContainer.appendChild(grid);
-
-  if (data.gaps_table) {
-    const gaps = document.createElement('div');
-    gaps.className = 'gaps-section';
-    gaps.innerHTML = `
-      <h2>Strategic Gaps</h2>
-      <table class="gaps-table">
-        <thead><tr><th>Gap</th><th>Fix</th></tr></thead>
-        <tbody>${data.gaps_table.map(g => `<tr><td>${g.gap}</td><td>${g.fix}</td></tr>`).join('')}</tbody>
-      </table>
-    `;
-    elements.reportContainer.appendChild(gaps);
-  }
 }
 
 window.startOptimizedAnalysis = startOptimizedAnalysis;
