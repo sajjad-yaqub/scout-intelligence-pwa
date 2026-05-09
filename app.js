@@ -1,6 +1,6 @@
 /**
  * Scout PWA - app.js
- * v16.12: Restored Icons & Tabular PDF.
+ * v16.13: Simplified Outreach & Hardened PDF.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -149,7 +149,7 @@ function init() {
 
   renderRecentSearches();
   setupEventListeners();
-  console.log("Scout Initialized (v16)");
+  console.log("Scout Initialized (v16.13)");
 }
 
 function setupEventListeners() {
@@ -415,7 +415,6 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
 
 async function handleGenerateOutreach() {
   const resume = elements.resumeText.value.trim();
-  const format = document.querySelector('input[name="format"]:checked').value;
   
   if (!resume) return alert("Please paste a resume first.");
   if (!currentReport) return alert("No company data found.");
@@ -428,7 +427,7 @@ async function handleGenerateOutreach() {
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: OUTREACH_PROMPT },
-        { role: "user", content: `COMPANY MEMO:\n${JSON.stringify(currentReport)}\n\nRESUME:\n${resume}\n\nFORMAT: ${format}` }
+        { role: "user", content: `COMPANY MEMO:\n${JSON.stringify(currentReport)}\n\nRESUME:\n${resume}` }
       ],
       response_format: { type: "json_object" },
       temperature: 0.0
