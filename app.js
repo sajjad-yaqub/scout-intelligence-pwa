@@ -1,6 +1,6 @@
 /**
  * Scout PWA - app.js
- * v16.9: Strict B&W One-Page PDF.
+ * v16.10: Bugfix - Resolved fetch header type error.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -80,7 +80,7 @@ async function callProxy(action, body) {
   try {
     const response = await fetch('/api/scout', {
       method: 'POST',
-      headers: 'application/json',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, body })
     });
     
