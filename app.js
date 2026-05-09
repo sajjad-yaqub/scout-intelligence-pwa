@@ -1,7 +1,7 @@
 /**
  * Scout PWA - app.js
- * v16.4: Label-Free Outreach.
- * Purging corporate headers and placeholders. Enforcing natural conversational transitions.
+ * v16.5: Zero-Signature Outreach.
+ * Wiping all AI-isms, formal greetings, and closings. Enforcing clean paragraph flow.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -57,22 +57,22 @@ const OUTREACH_PROMPT = `You have been given:
 Your job is to write a high-conviction "Operator Thought" FROM the person in the resume TO a key stakeholder at the company.
 
 CORE INSTRUCTIONS:
-- NO FIXED LABELS: Do not use "Note", "Key Highlights", or "Summary" as headers. They sound like corporate reports. 
-- NATURAL TRANSITIONS: Move between ideas using human prose (e.g., "The way I see it is...", "I went and mapped this out and realized...", "The hard part here is...").
-- DISCOVERY-BASED PROSE: Write as if you are sharing a discovery in real-time. Walk them through the "Found Truth" and the "Big Problem" using the declarative rhythm of someone who has actually done the work.
-- NO HALLUCINATED ATTACHMENTS: Do not mention attachments or "notes attached" unless explicitly told. Treat the message itself as the high-conviction thesis.
+- NO AI SIGNATURES: Absolutely no "In conclusion", "I analyzed", "Based on my research", "I hope this finds you well", or formal hedging. 
+- DIRECT ENTRY: Do not use formal greetings (Dear, Hi). Start directly with the human truth or the research signal.
+- NO FORMAL CLOSING: Do not use "Best", "Sincerely", or "Regards". End directly with the technical ask.
+- PARAGRAPH SPACING: Use proper paragraph breaks with double-newlines (\n\n) between distinct thoughts.
+- OPERATOR PROSE: Use plain, heavy words. "I mapped this out" instead of "I conducted an analysis." 
 
-VOICE FINGERPRINT:
-- Start from a human truth, not a feature.
-- Show your work: Walkthrough of the reasoning process.
-- Short declarative rhythm. Zero corporate jargon.
-- Write like a person thinking out loud. High conviction, low arrogance.
+STRUCTURE:
+- Paragraph 1: The Human Truth discovery.
+- Paragraph 2: The Alignment (Proof of work from resume).
+- Paragraph 3: The Hard Problem (The specific defect in the memo) + The Ask.
 
 OUTPUT JSON:
 {
   "hook": "The core human truth or non-obvious discovery",
-  "message": "The final Operator Thought. Pure, label-free prose. Natural flow. High quality.",
-  "why": "Why this specific discovery and alignment will land."
+  "message": "The final Operator Thought. Paragraphs with spacing. No AI signatures. No formalisms.",
+  "why": "Why this specific direct-entry approach will land."
 }`;
 
 // Helper: Call Vercel Proxy
