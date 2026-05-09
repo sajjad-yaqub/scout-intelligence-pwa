@@ -1,6 +1,6 @@
 /**
  * Scout PWA - app.js
- * v16.12: Dedicated Tabular PDF Grid.
+ * v16.12: Restored Icons & Tabular PDF.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -317,23 +317,36 @@ function renderDisambiguation(query, results, originalContext) {
   const companyClean = query.toLowerCase().replace(/[^a-z0-9]/g, '');
   views.disambiguation.innerHTML = `
     <header class="home-header">
-      <h1>Which ${query}?</h1>
-      <p>Target identification required for Operator Memo</p>
+      <div style="font-family:var(--mono); font-size:0.6rem; color:var(--accent); margin-bottom:1rem; letter-spacing:0.2em;">TARGET IDENTIFICATION</div>
+      <h1 style="font-size:3rem;">Which ${query}?</h1>
+      <p>Select the precise entity for Operator Intelligence</p>
     </header>
-    <div class="disambiguation-list" style="display:flex; flex-direction:column; gap:1rem;">
-      ${results.length === 0 ? '<p>No results found.</p>' : results.map((r, i) => `
-        <div class="disambiguation-item ${r.url.toLowerCase().includes(companyClean) ? 'priority' : ''}" onclick="startOptimizedAnalysis('${query}', ${i}, '${originalContext}')">
-          <h4 style="font-family:var(--serif); font-size:1.5rem;">${r.title}</h4>
-          <p style="font-family:var(--mono); font-size:0.75rem; color:var(--accent); margin:0.5rem 0;">${r.url}</p>
-          <p style="font-size:0.85rem; color:var(--text-dim);">${r.content.substring(0, 150)}...</p>
-        </div>
-      `).join('')}
-      <div class="disambiguation-item" onclick="startOptimizedAnalysis('${query}', -1, '${originalContext}')">
-        <h4>General Aggregated Research</h4>
-        <p>No specific source target</p>
+    <div class="disambiguation-list" style="display:flex; flex-direction:column; gap:1rem; max-width:600px; margin:0 auto;">
+      ${results.length === 0 ? '<p>No results found.</p>' : results.map((r, i) => {
+        const domain = new URL(r.url).hostname;
+        const iconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+        return `
+          <div class="disambiguation-item ${r.url.toLowerCase().includes(companyClean) ? 'priority' : ''}" 
+               style="display:flex; gap:1.5rem; align-items:center; background:var(--glass); border:1px solid var(--border); padding:1.5rem; border-radius:16px; cursor:pointer; transition:all 0.3s ease;"
+               onclick="startOptimizedAnalysis('${query}', ${i}, '${originalContext}')">
+            <img src="${iconUrl}" style="width:48px; height:48px; border-radius:10px; background:#fff; padding:4px;" onerror="this.src='icons/icon-192.svg'">
+            <div style="flex:1;">
+              <h4 style="font-family:var(--serif); font-size:1.4rem; color:var(--text);">${r.title}</h4>
+              <p style="font-family:var(--mono); font-size:0.65rem; color:var(--accent); margin:0.2rem 0;">${domain}</p>
+              <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.4; margin-top:0.5rem;">${r.content.substring(0, 120)}...</p>
+            </div>
+          </div>
+        `;
+      }).join('')}
+      <div class="disambiguation-item" 
+           style="background:rgba(255,255,255,0.02); border:1px dashed var(--border); padding:1.5rem; border-radius:16px; cursor:pointer; text-align:center;"
+           onclick="startOptimizedAnalysis('${query}', -1, '${originalContext}')">
+        <h4 style="font-size:1rem; color:var(--text-dim);">None of these / General Research</h4>
       </div>
     </div>
-    <button class="btn-text" style="margin-top: 2rem; color:var(--text-muted);" onclick="showView('home')">← Back to search</button>
+    <div style="text-align:center; margin-top: 3rem;">
+      <button class="btn-text" style="color:var(--text-muted);" onclick="showView('home')">← Back to search</button>
+    </div>
   `;
 }
 
