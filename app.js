@@ -51,34 +51,32 @@ OUTPUT JSON:
 TONE: Short sentences. Direct verdicts. Praise where real. Critique where needed. No balance for the sake of balance.`;
 
 const OUTREACH_PROMPT = `You have been given:
-1. A company research memo
-2. A resume
+1. A company research memo (Deep intelligence on their model, gaps, and moats)
+2. A resume (Your proof of work)
 
-Your job is to write one outreach message FROM the person described in the resume TO a key stakeholder (Founder/Hiring Manager) at the company in the memo. Work through three steps.
+Your job is to write a high-conviction outreach message FROM the person in the resume TO a key stakeholder at the company.
 
-STEP 1 — FIND THE HOOK
-From the memo, find the ONE gap that the resume most directly addresses. It must be:
-- Specific — not "growth" in general, but which part of the funnel, which user, which metric
-- Provable — there is a direct proof point in the resume: a metric, a mechanism, a 0→1 build
-- Urgent — it is structural or high-priority for the company, not a nice-to-have
+STRUCTURE:
+1. HUMAN OBSERVATION: Signal you've done deep research. Mention a specific nuance of their business model or a structural shift you noticed (e.g., "noticed you're moving from X to Y" or "saw the unit economics shift in Z").
+2. THE PROBLEM BRIDGE: Identify ONE specific structural gap or "hard problem" from the memo that is currently blocking them or is a high-priority risk.
+3. THE PROOF: Explain how you solved exactly this at a previous company. Lead with the mechanism and the metric. Show, don't tell.
+4. THE ASK: A low-friction, casual question to start a technical conversation.
 
-State the hook in one sentence:
-"[Company] has [specific problem]. This resume shows exactly how this was solved at [Previous Company] by [specific mechanism], resulting in [metric]."
-
-STEP 2 — WRITE THE MESSAGE
-Write a message in the requested format (LinkedIn DM: 80-120 words or Email: 150-200 words).
-Perspective: Write AS the candidate from the resume.
-Voice rules:
-- Open with a human observation about their business. Something you noticed from actually looking, not a press release. No "I came across your profile."
-- One specific thing from the resume that is directly relevant. Lead with what was built or what happened, not a job title.
-- End with a low-friction ask — a question or a short conversation, not "I'd love to explore opportunities."
+VOICE RULES (STRICT):
 - No buzzwords. No "I'm passionate about." No "I'd love to connect."
 - Short declarative sentences. Write like a person thinking out loud.
-- Show fieldwork (went and mapped, interviewed, built) instead of passive leadership.
+- Use fieldwork language: "went and mapped", "interviewed", "built the mechanism."
 - If there is a metric, lead with it.
+- Format: requested format (LinkedIn DM: 80-120 words or Email: 150-200 words).
 
-STEP 3 — EXPLAIN THE BET
-2-3 sentences on why this will land based on signals in the memo. Why will this specific hook resonate with this specific founder?
+STEP 1 — THE HOOK (Internal Reasoning)
+One sentence: "[Company] has [specific problem]. I solved this at [Previous Company] by [mechanism], resulting in [metric]."
+
+STEP 2 — THE MESSAGE (The Draft)
+Write the message following the structure and voice rules above. Signal research depth in the opening.
+
+STEP 3 — THE BET (Strategy)
+2-3 sentences on why this will land. What specific signal in the memo makes this "problem" urgent for them right now?
 
 OUTPUT JSON:
 {
