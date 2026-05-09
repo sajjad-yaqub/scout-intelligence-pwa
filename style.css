@@ -307,30 +307,6 @@ textarea {
   font-size: 0.95rem;
 }
 
-/* Loading & Skeletons */
-.loading-header { text-align: center; margin-top: 5rem; }
-.shimmer {
-  background: linear-gradient(90deg, var(--surface) 25%, #2a2a2a 50%, var(--surface) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-@keyframes shimmer {
-  from { background-position: -200% 0; }
-  to { background-position: 200% 0; }
-}
-
-.skeleton-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-  max-width: 800px;
-  margin: 3rem auto;
-}
-
-.skeleton-card { height: 100px; border-radius: 16px; }
-.tldr-skeleton { height: 250px; }
-
 /* Outreach Styles */
 .format-chip {
   padding: 1rem;
@@ -369,20 +345,28 @@ input[name="format"]:checked + .format-chip {
   margin-left: 1rem;
 }
 
-/* PDF & Print Optimizations */
-@media print {
-  body { background: #fff; color: #000; }
-  .view { padding: 0; margin: 0; }
-  .report-nav, #trigger-outreach-btn { display: none !important; }
-  .memo-section { page-break-inside: avoid; border-bottom: 1px solid #eee; }
-  .memo-header { margin-bottom: 2rem; }
-  h1 { font-size: 2rem; }
-  .memo-title { font-size: 1.2rem; }
-  .memo-content { font-size: 0.9rem; color: #333; }
-}
-
-/* Ensure the container looks clean during html2pdf capture */
-#report-container {
-  max-width: 800px;
-  margin: 0 auto;
+/* PDF & Print Optimizations (Strict One-Page B&W) */
+@media print, .pdf-mode {
+  body, .view { background: #fff !important; color: #000 !important; padding: 0 !important; margin: 0 !important; }
+  #report-container { 
+    max-width: 100% !important; 
+    padding: 0.25in !important; 
+    background: #fff !important;
+  }
+  .report-nav, #trigger-outreach-btn, .copy-badge { display: none !important; }
+  
+  .memo-header { margin-bottom: 1rem !important; border-bottom: 2px solid #000; padding-bottom: 1rem; }
+  .memo-header h1 { font-size: 1.8rem !important; margin: 0 !important; color: #000 !important; }
+  .memo-header p { font-size: 0.8rem !important; color: #444 !important; }
+  
+  .memo-section { margin-bottom: 0.75rem !important; border-bottom: 1px solid #eee; padding-bottom: 0.5rem; page-break-inside: avoid; }
+  .memo-label { font-size: 0.5rem !important; color: #666 !important; margin-bottom: 0.2rem !important; }
+  .memo-title { font-size: 1rem !important; margin-bottom: 0.3rem !important; color: #000 !important; line-height: 1.1 !important; }
+  .memo-content { font-size: 7.5pt !important; line-height: 1.3 !important; color: #111 !important; }
+  .memo-list li { margin-bottom: 0.2rem !important; font-size: 7.5pt !important; padding-left: 1rem !important; }
+  .memo-list li::before { font-size: 0.5rem !important; top: 0.1rem !important; }
+  
+  .memo-table td, .memo-table th { padding: 0.4rem !important; font-size: 7pt !important; }
+  .memo-verdict { font-size: 0.6rem !important; padding: 0.1rem 0.4rem !important; border: 1px solid #000 !important; background: none !important; color: #000 !important; }
+  .pill { display: none !important; } /* Hide status pills in B&W PDF */
 }

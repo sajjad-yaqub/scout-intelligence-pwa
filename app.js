@@ -1,6 +1,6 @@
 /**
  * Scout PWA - app.js
- * v16.8: PDF Export & Novelty Protocol.
+ * v16.9: Strict B&W One-Page PDF.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -80,7 +80,7 @@ async function callProxy(action, body) {
   try {
     const response = await fetch('/api/scout', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: 'application/json',
       body: JSON.stringify({ action, body })
     });
     
@@ -179,21 +179,28 @@ function setupEventListeners() {
 function handleDownloadPDF() {
   if (!currentReport) return;
   const container = document.getElementById('report-container');
+  const app = document.getElementById('app');
   
-  // Temporarily hide the outreach trigger button for the PDF
-  const outreachBtn = document.getElementById('trigger-outreach-btn');
-  if (outreachBtn) outreachBtn.style.display = 'none';
+  // Enter PDF mode (B&W + Dense)
+  app.classList.add('pdf-mode');
 
   const opt = {
-    margin: 0.5,
+    margin: 0,
     filename: `Scout_Memo_${currentReport.company.replace(/\s+/g, '_')}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#0f0f0f' },
-    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    image: { type: 'jpeg', quality: 1.0 },
+    html2canvas: { 
+      scale: 3, 
+      useCORS: true, 
+      backgroundColor: '#ffffff',
+      letterRendering: true
+    },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
   };
 
   html2pdf().set(opt).from(container).save().then(() => {
-    if (outreachBtn) outreachBtn.style.display = 'block';
+    // Exit PDF mode
+    app.classList.remove('pdf-mode');
   });
 }
 
