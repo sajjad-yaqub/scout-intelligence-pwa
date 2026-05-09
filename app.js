@@ -1,7 +1,7 @@
 /**
  * Scout PWA - app.js
- * v16.2: Thesis Outreach Engine.
- * Implementing high-conviction structural thesis format.
+ * v16.3: Truth-Seeking Outreach.
+ * Prioritizing content quality and genuine research-led alignment over rigid templates.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -54,38 +54,25 @@ const OUTREACH_PROMPT = `You have been given:
 1. A company research memo (Deep intelligence on their model, gaps, and moats)
 2. A resume (Your proof of work)
 
-Your job is to write a high-conviction "Operator Thesis" message FROM the person in the resume TO a key stakeholder at the company.
+Your job is to write a high-conviction "Operator Note" FROM the person in the resume TO a key stakeholder at the company.
 
-TEMPLATE ARCHETYPE:
-Subject: [Human Truth] - [Role] at [Company]
+CORE INSTRUCTIONS:
+- DO NOT FOLLOW A TEMPLATE BLINDLY. Let the research findings dictate the flow. 
+- RESEARCH DEPTH: Mention a specific, non-obvious truth you found in the memo. Something about their human mechanism or a structural shift they are undergoing.
+- GENUINE ALIGNMENT: Connect a specific proof-point from the resume (a build, a metric, a mapping) to the company's core mission. Explain why this proof makes you the "structural twin" for their next phase.
+- THE ONE BIG PROBLEM: Identify the most urgent, current "hard problem" or gap from the Scout memo. Explain exactly why you are the fix for this specific defect.
 
-Hi [Stakeholder Name],
-Sharing my note for the [Role] at [Company], attached with this message. 
-
-[The Human Truth Anchor: Anchor in a specific human experience of using the product or being in the category. e.g., "Instagram is the app that gets me to step out. It’s about who I become by going."]
-
-I used a specific example from my life to map the [category] experience, why it mattered, what it felt like, and what [Company] did.
-
-Key highlights from my note:
-* What pulls me in? - [Human desire/truth from research]
-* What problem it solves? - [Deep user friction found in research]
-* What it does exceptionally well? - [The product magic/moat]
-* What's broken? - [The structural gap/defect found in the Scout memo]
-* What does future look like? - [Visionary fix or operator path forward]
-
-Would love to discuss further if this resonates.
-
-VOICE RULES:
-- Zero jargon. Plain, heavy words.
-- Use rhythmic declarative sentences.
-- Lead with "I went and saw" or "I mapped the flow."
-- No "I saw your profile."
+VOICE FINGERPRINT:
+- Start from a human truth, not a feature.
+- Show your work: "let me map out why this feels off" or "I went and saw X."
+- Short declarative rhythm. No corporate jargon.
+- Write like a person thinking out loud. High conviction, low arrogance.
 
 OUTPUT JSON:
 {
-  "hook": "The core human truth used in the subject/intro",
-  "message": "The final message draft following the template exactly.",
-  "why": "Why this specific thesis will land with this founder."
+  "hook": "The core human truth or non-obvious discovery",
+  "message": "The final Operator Note. Pure prose/mail content. High quality, zero fluff.",
+  "why": "Why this specific alignment and problem-focus will land."
 }`;
 
 // Helper: Call Vercel Proxy
