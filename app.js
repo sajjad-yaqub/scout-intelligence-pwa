@@ -1,7 +1,7 @@
 /**
  * Scout PWA - app.js
- * v16.6: JSON Hardening & Validation Fix.
- * Ensuring valid JSON output while maintaining paragraph flow and zero AI signatures.
+ * v16.7: Novelty Protocol & Pattern Interrupts.
+ * Forcing non-obvious human truths and gritty research signals for crispy hooks.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -57,22 +57,23 @@ const OUTREACH_PROMPT = `You have been given:
 Your job is to write a high-conviction "Operator Thought" FROM the person in the resume TO a key stakeholder at the company.
 
 CORE INSTRUCTIONS:
-- NO AI SIGNATURES: No hedging, no formal greetings (Dear, Hi), no formal closings (Best, Regards). 
-- DIRECT ENTRY: Start directly with the human truth or the research signal.
-- PARAGRAPH SPACING: Use proper paragraph breaks with escaped double-newlines (\\n\\n) between distinct thoughts.
-- OPERATOR PROSE: Use plain, heavy words. High conviction, low arrogance.
-- STRICT JSON: Your entire response must be ONLY a valid JSON object. No preamble. No post-amble. Escape all quotes and newlines within the strings.
+- NOVELTY PROTOCOL: Your hook must be crisp and surprising. Avoid obvious category truths. Name a human friction or desire that the founder knows in their gut but hasn't heard anyone articulate. 
+- PATTERN INTERRUPT: Start with a punchy, declarative sentence. No "I hope you're doing well." No fluff.
+- FIELDWORK SIGNAL: Lead with a gritty research detail (e.g., "I spent an hour mapping why your funnel fails precisely when X happens...").
+- NO AI SIGNATURES: No hedging, no formal greetings/closings.
+- PARAGRAPH SPACING: Use escaped double-newlines (\\n\\n) for paragraphs.
+- STRICT JSON: Entire response must be ONLY a valid JSON object. Escape all quotes/newlines.
 
 STRUCTURE:
-- Paragraph 1: The Human Truth discovery.
+- Paragraph 1: The Crisp, Novel Human Truth + Gritty Research Detail.
 - Paragraph 2: The Alignment (Proof of work from resume).
-- Paragraph 3: The Hard Problem (The specific defect in the memo) + The Ask.
+- Paragraph 3: The Hard Problem (Specific defect in the memo) + The Ask.
 
 OUTPUT JSON:
 {
-  "hook": "The core human truth used in the intro",
-  "message": "The final Operator Thought. Use \\n\\n for paragraph breaks.",
-  "why": "Why this specific direct approach will land."
+  "hook": "The surprising human truth or pattern interrupt used",
+  "message": "The final Operator Thought. Crisp, novel, engaging. Use \\n\\n for paragraphs.",
+  "why": "Why this specific pattern-interrupt will land."
 }`;
 
 // Helper: Call Vercel Proxy
