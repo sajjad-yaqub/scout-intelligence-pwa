@@ -1,7 +1,7 @@
 /**
  * Scout PWA - app.js
- * v16: Voice Fingerprint Integration.
- * Anchoring everything in human truth, fieldwork, and zero jargon.
+ * v16.2: Thesis Outreach Engine.
+ * Implementing high-conviction structural thesis format.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -54,26 +54,38 @@ const OUTREACH_PROMPT = `You have been given:
 1. A company research memo (Deep intelligence on their model, gaps, and moats)
 2. A resume (Your proof of work)
 
-Your job is to write a high-conviction message FROM the person in the resume TO a key stakeholder at the company.
+Your job is to write a high-conviction "Operator Thesis" message FROM the person in the resume TO a key stakeholder at the company.
 
-VOICE FINGERPRINT (CRITICAL):
-- START FROM A HUMAN TRUTH: Do not start with a feature or a job. Start with what a person becomes or a human insight. (e.g., "making it easier for me to be a good husband" vs "algorithm updates").
-- SHOW YOUR WORK: Don't just state a conclusion. Walk them through your discovery. Use phrases like "let me map out this experience" or "let me deep dive into why this feels off." 
-- PERSONAL FIELDWORK: Reference what you actually did. "I went and saw", "I interviewed riders", "I mapped the flow." Never "research shows."
-- SHORT DECLARATIVE RHYTHM: Use punchy sentences to make points. "This is why I step out. Not for the cafe. For this."
-- ZERO JARGON: No "leverage", "synergies", "alignment." Use plain, heavy words.
-- CONVERSATIONAL FRAMEWORKS: Use logic/bullet points but wrap them in human prose like "I'd like to add context here" or "Let us decouple the words."
+TEMPLATE ARCHETYPE:
+Subject: [Human Truth] - [Role] at [Company]
 
-STRUCTURE:
-- Opening: The Human Truth + Research Signal.
-- Body: Walkthrough of the structural gap found in the memo + your fieldwork proof (from resume).
-- Closing: A low-friction, casual question to start a technical conversation.
+Hi [Stakeholder Name],
+Sharing my note for the [Role] at [Company], attached with this message. 
+
+[The Human Truth Anchor: Anchor in a specific human experience of using the product or being in the category. e.g., "Instagram is the app that gets me to step out. It’s about who I become by going."]
+
+I used a specific example from my life to map the [category] experience, why it mattered, what it felt like, and what [Company] did.
+
+Key highlights from my note:
+* What pulls me in? - [Human desire/truth from research]
+* What problem it solves? - [Deep user friction found in research]
+* What it does exceptionally well? - [The product magic/moat]
+* What's broken? - [The structural gap/defect found in the Scout memo]
+* What does future look like? - [Visionary fix or operator path forward]
+
+Would love to discuss further if this resonates.
+
+VOICE RULES:
+- Zero jargon. Plain, heavy words.
+- Use rhythmic declarative sentences.
+- Lead with "I went and saw" or "I mapped the flow."
+- No "I saw your profile."
 
 OUTPUT JSON:
 {
-  "hook": "Internal reasoning: The core problem-solution bridge",
-  "message": "The final message draft. No 'Step 1' or 'Step 2' labels. Just the prose/mail content.",
-  "why": "Why this specific hook/truth will land with this founder."
+  "hook": "The core human truth used in the subject/intro",
+  "message": "The final message draft following the template exactly.",
+  "why": "Why this specific thesis will land with this founder."
 }`;
 
 // Helper: Call Vercel Proxy
