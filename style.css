@@ -345,54 +345,87 @@ input[name="format"]:checked + .format-chip {
   margin-left: 1rem;
 }
 
-/* PDF & Print Optimizations (Ultra-Dense Strictly B&W One-Page) */
-@media print, .pdf-mode {
-  :root {
-    --bg: #ffffff !important;
-    --surface: #ffffff !important;
-    --surface-hover: #ffffff !important;
-    --accent: #000000 !important;
-    --text: #000000 !important;
-    --text-dim: #000000 !important;
-    --text-muted: #444444 !important;
-    --border: #eeeeee !important;
-    --border-strong: #000000 !important;
-    --glass: #ffffff !important;
-  }
+/* Dedicated PDF Intelligence Grid (v16.12) */
+#pdf-export-template {
+  display: none; /* Hidden on screen */
+  background: #fff;
+  color: #000;
+  width: 7.5in; /* Standard letter width minus margins */
+  padding: 0.25in;
+  font-family: 'Inter', sans-serif;
+}
 
-  body, .view, #app { background: #fff !important; color: #000 !important; }
-  
-  #report-container { 
-    max-width: 100% !important; 
-    padding: 0.1in !important; 
-    margin: 0 !important;
-    transform: scale(0.9);
-    transform-origin: top center;
-  }
+/* Specific styling for the PDF export process */
+.pdf-exporting #pdf-export-template {
+  display: block !important;
+}
 
-  .report-nav, #trigger-outreach-btn, .copy-badge, .pill { display: none !important; }
-  
-  .memo-header { margin-bottom: 0.5rem !important; border-bottom: 1px solid #000 !important; padding-bottom: 0.5rem !important; text-align: left !important; }
-  .memo-header h1 { font-size: 1.5rem !important; margin: 0 !important; color: #000 !important; }
-  .memo-header p { font-size: 0.7rem !important; margin-top: 0.2rem !important; }
-  
-  .memo-section { margin-bottom: 0.4rem !important; border-bottom: 1px solid #eee !important; padding-bottom: 0.2rem !important; page-break-inside: avoid !important; }
-  .memo-label { font-size: 0.45rem !important; color: #666 !important; margin-bottom: 0.1rem !important; }
-  .memo-title { font-size: 0.9rem !important; margin-bottom: 0.2rem !important; color: #000 !important; font-weight: 700 !important; }
-  .memo-content { font-size: 7pt !important; line-height: 1.2 !important; color: #000 !important; }
-  
-  .memo-list li { margin-bottom: 0.1rem !important; font-size: 7pt !important; padding-left: 0.8rem !important; }
-  .memo-list li::before { font-size: 0.45rem !important; top: 0 !important; }
-  
-  .memo-table td, .memo-table th { padding: 0.2rem !important; font-size: 6.5pt !important; border-bottom: 0.5px solid #eee !important; }
-  .memo-verdict { 
-    display: inline-block !important;
-    font-size: 0.55rem !important; 
-    padding: 0 !important; 
-    border: none !important; 
-    background: none !important; 
-    color: #000 !important; 
-    font-weight: 900 !important;
-    text-decoration: underline;
-  }
+.pdf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  border-top: 2px solid #000;
+  padding-top: 0.5rem;
+}
+
+.pdf-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pdf-item {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.2rem;
+}
+
+.pdf-item-title {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  font-weight: 900;
+  color: #444;
+  margin-bottom: 0.1rem;
+}
+
+.pdf-item-content {
+  font-size: 7.5pt;
+  line-height: 1.2;
+  color: #000;
+}
+
+.pdf-verdict-inline {
+  font-weight: 900;
+  text-decoration: underline;
+  margin-right: 0.5rem;
+}
+
+.pdf-header-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.pdf-header-compact h1 {
+  font-family: var(--serif);
+  font-size: 1.75rem;
+  margin: 0;
+}
+
+.pdf-gaps-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.pdf-gaps-table td {
+  font-size: 6.5pt;
+  padding: 0.1rem 0;
+  border-bottom: 0.5px solid #eee;
+}
+
+/* Force hide everything else in PDF mode */
+.pdf-exporting #app, .pdf-exporting .view, .pdf-exporting .report-nav {
+  display: none !important;
 }

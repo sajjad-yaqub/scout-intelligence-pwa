@@ -1,129 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Scout</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f0f0f">
-  <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital,wght@0,400;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scout Intelligence // High-Conviction Research</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- html2pdf library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
-  <div id="app">
-    <!-- API Key Warning -->
-    <div id="api-warning" class="banner hidden">
-      <span>API_KEY is missing. Add it to app.js to enable analysis.</span>
+    <div id="app">
+        <!-- Home Screen -->
+        <section id="home-screen" class="view">
+            <header class="home-header">
+                <p>Scout v16.12</p>
+                <h1>Scout</h1>
+            </header>
+
+            <div class="search-box">
+                <div class="input-group">
+                    <input type="text" id="company-name" placeholder="Company name or URL..." autocomplete="off">
+                    <button id="toggle-context" class="btn-text">+ Add context</button>
+                    <textarea id="extra-context" class="hidden" placeholder="What specific problem or competitor should I hunt for?"></textarea>
+                </div>
+                <button id="analyse-btn" class="btn-primary">Initiate Deep Hunt</button>
+            </div>
+
+            <div class="recent-container">
+                <h3>Recent Intelligence</h3>
+                <div id="recent-chips" class="chips"></div>
+            </div>
+        </section>
+
+        <!-- Loading Screen -->
+        <section id="loading-screen" class="view hidden">
+            <div class="loading-container">
+                <div class="spinner"></div>
+                <h2 id="loading-company-name">Analyzing...</h2>
+                <p class="loading-status">Hunting through 14 data points...</p>
+            </div>
+        </section>
+
+        <!-- Disambiguation Screen (Dynamic) -->
+        <section id="disambiguation-screen" class="view hidden"></section>
+
+        <!-- Report Screen -->
+        <section id="report-screen" class="view hidden">
+            <nav class="report-nav">
+                <button id="back-to-home" class="btn-icon">←</button>
+                <div id="report-title-header" class="header-compact">Research Memo</div>
+                <button id="download-pdf-btn" class="btn-icon" style="color:var(--accent);">PDF</button>
+            </nav>
+            <div id="report-container">
+                <!-- Injected via JS -->
+            </div>
+        </section>
+
+        <!-- Outreach Screen -->
+        <section id="outreach-screen" class="view hidden">
+            <nav class="report-nav">
+                <button id="back-to-report" class="btn-icon">←</button>
+                <div class="header-compact">Operator Outreach</div>
+            </nav>
+            <div class="outreach-container" style="max-width:800px; margin:2rem auto; padding:0 2rem;">
+                <div class="memo-label">SITUATION</div>
+                <h2 style="font-family:var(--serif); font-size:3rem; margin-bottom:2rem;">Draft Mission Message</h2>
+                
+                <div class="input-group" style="margin-bottom:2rem;">
+                    <label style="font-family:var(--mono); font-size:0.6rem; color:var(--text-muted); margin-bottom:0.5rem; display:block;">PASTE SENDER RESUME / PROFILE</label>
+                    <textarea id="resume-text" placeholder="Paste resume text here to align voice and experience..." style="min-height:200px;"></textarea>
+                </div>
+
+                <div class="outreach-controls" style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:2rem;">
+                    <label style="cursor:pointer;">
+                        <input type="radio" name="format" value="linkedin" checked style="display:none;">
+                        <div class="format-chip">LinkedIn DM</div>
+                    </label>
+                    <label style="cursor:pointer;">
+                        <input type="radio" name="format" value="email" style="display:none;">
+                        <div class="format-chip">Cold Email</div>
+                    </label>
+                </div>
+
+                <button id="generate-outreach-btn" class="btn-primary" style="background:var(--accent); color:#000;">
+                    Generate Mission Message
+                </button>
+
+                <div id="outreach-result" class="hidden" style="margin-top:4rem; border-top:1px solid var(--border); padding-top:4rem;">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Error Screen -->
+        <section id="error-screen" class="view hidden">
+            <div class="error-container">
+                <h1>Extraction Failed</h1>
+                <p id="error-message">Connection to intelligence node lost.</p>
+                <button id="retry-btn" class="btn-primary">Retry</button>
+            </div>
+        </section>
     </div>
 
-    <!-- Home Screen -->
-    <section id="home-screen" class="view">
-      <header class="home-header">
-        <h1>Scout</h1>
-        <p>Company Intelligence Engine</p>
-      </header>
-      
-      <div class="search-box">
-        <div class="input-group">
-          <input type="text" id="company-name" placeholder="Company name" autocomplete="off">
-          <button id="toggle-context" class="btn-text">+ Add context</button>
-        </div>
-        <textarea id="extra-context" class="hidden" placeholder="URL, pitch notes, or extra context..."></textarea>
-        <button id="analyse-btn" class="btn-primary">Analyse</button>
-      </div>
-
-      <div id="recent-searches" class="recent-container">
-        <h3>Recent</h3>
-        <div id="recent-chips" class="chips"></div>
-      </div>
-    </section>
-
-    <!-- Report View -->
-    <section id="report-screen" class="view hidden">
-      <nav class="report-nav">
-        <div style="display:flex; gap:0.5rem; align-items:center;">
-          <button id="back-to-home" class="btn-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          </button>
-          <button id="download-pdf-btn" class="btn-icon" title="Export One-Page PDF">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          </button>
-        </div>
-        <div id="report-title-header" class="header-compact"></div>
-      </nav>
-
-      <div id="report-container">
-        <!-- Rendered Dynamically -->
-      </div>
-    </section>
-
-    <!-- Loading Skeleton -->
-    <section id="loading-screen" class="view hidden">
-      <div class="loading-header">
-        <h2 id="loading-company-name">Researching...</h2>
-        <div class="shimmer header-shimmer"></div>
-      </div>
-      <div class="skeleton-grid">
-        <div class="skeleton-card tldr-skeleton shimmer"></div>
-        <div class="skeleton-card shimmer"></div>
-        <div class="skeleton-card shimmer"></div>
-        <div class="skeleton-card shimmer"></div>
-        <div class="skeleton-card shimmer"></div>
-      </div>
-    </section>
-
-    <!-- Error View -->
-    <section id="error-screen" class="view hidden">
-      <div class="error-box">
-        <h2>Analysis Failed</h2>
-        <p id="error-message"></p>
-        <button id="retry-btn" class="btn-primary">Retry</button>
-      </div>
-    </section>
-
-    <!-- Outreach View -->
-    <section id="outreach-screen" class="view hidden">
-      <nav class="report-nav">
-        <button id="back-to-report" class="btn-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        </button>
-        <div class="header-compact">Mission Outreach</div>
-      </nav>
-
-      <div class="search-box outreach-form">
-        <div class="memo-label">Step 1: Input Intelligence</div>
-        <textarea id="resume-text" placeholder="Paste resume here..." style="min-height: 200px;"></textarea>
-        
-        <div class="format-selector" style="display:flex; gap:1rem; margin-top:1rem;">
-          <label style="flex:1; cursor:pointer;">
-            <input type="radio" name="format" value="linkedin" checked style="display:none;">
-            <div class="format-chip">LinkedIn DM</div>
-          </label>
-          <label style="flex:1; cursor:pointer;">
-            <input type="radio" name="format" value="email" style="display:none;">
-            <div class="format-chip">Email</div>
-          </label>
-        </div>
-
-        <button id="generate-outreach-btn" class="btn-primary" style="margin-top:1.5rem;">Generate Mission Message</button>
-      </div>
-
-      <div id="outreach-result" class="hidden" style="margin-top:3rem; animation: viewIn 0.5s ease;">
-        <!-- Rendered Dynamically -->
-      </div>
-    </section>
-
-    <!-- Install Banner -->
-    <div id="install-banner" class="banner hidden">
-      <span>Install Scout for offline access</span>
-      <button id="install-btn" class="btn-pill">Install</button>
-    </div>
-  </div>
-
-  <script src="app.js"></script>
+    <!-- Hidden PDF Template for v16.12 -->
+    <div id="pdf-export-template" class="hidden-pdf-content"></div>
+    
+    <script src="app.js"></script>
 </body>
 </html>

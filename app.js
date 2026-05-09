@@ -1,6 +1,6 @@
 /**
  * Scout PWA - app.js
- * v16.11: Ultra-Dense Monochrome PDF.
+ * v16.12: Dedicated Tabular PDF Grid.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -178,34 +178,89 @@ function setupEventListeners() {
 
 function handleDownloadPDF() {
   if (!currentReport) return;
-  const container = document.getElementById('report-container');
-  const app = document.getElementById('app');
-  
-  // Enter PDF mode (B&W + Ultra-Dense)
-  app.classList.add('pdf-mode');
+  const template = document.getElementById('pdf-export-template');
+  const m = currentReport.memo;
 
-  // Allow 100ms for the browser to apply the monochrome styles
-  setTimeout(() => {
-    const opt = {
-      margin: 0,
-      filename: `Scout_Memo_${currentReport.company.replace(/\s+/g, '_')}.pdf`,
-      image: { type: 'jpeg', quality: 1.0 },
-      html2canvas: { 
-        scale: 2.5, 
-        useCORS: true, 
-        backgroundColor: '#ffffff',
-        letterRendering: true,
-        scrollY: 0
-      },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-      pagebreak: { mode: 'avoid-all' }
-    };
+  // Populate the dense tabular template
+  template.innerHTML = `
+    <div class="pdf-header-compact">
+      <div>
+        <h1>${currentReport.company}</h1>
+        <p style="font-size:0.7rem; font-style:italic;">"${currentReport.tagline}"</p>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-weight:900; font-size:0.8rem;">VERDICT: ${currentReport.overall_verdict_short}</div>
+        <div style="font-size:0.6rem; color:#666;">CONFIDENCE: ${currentReport.data_quality_score}% | ${new Date().toLocaleDateString()}</div>
+      </div>
+    </div>
 
-    html2pdf().set(opt).from(container).save().then(() => {
-      // Exit PDF mode
-      app.classList.remove('pdf-mode');
-    });
-  }, 100);
+    <div class="pdf-grid">
+      <div class="pdf-col">
+        <div class="pdf-item">
+          <div class="pdf-item-title">01-02 // Mechanism & Problem</div>
+          <div class="pdf-item-content"><strong>Do:</strong> ${m.what_they_do} <br><strong>Claim:</strong> ${m.claimed_problem}</div>
+        </div>
+        <div class="pdf-item">
+          <div class="pdf-item-title">03-04 // ICP & Ground Truth</div>
+          <div class="pdf-item-content"><strong>User:</strong> ${m.the_user} <br><strong>Stack:</strong> ${m.real_problem_stack.join(' | ')}</div>
+        </div>
+        <div class="pdf-item">
+          <div class="pdf-item-title">05-06 // User-Problem Fit</div>
+          <div class="pdf-item-content">
+            <span class="pdf-verdict-inline">${m.user_problem_fit_verdict.verdict}</span> ${m.user_problem_fit_verdict.reason}
+            ${m.fit_gap_analysis ? `<br><strong style="color:#000;">GAP:</strong> ${m.fit_gap_analysis}` : ''}
+          </div>
+        </div>
+        <div class="pdf-item">
+          <div class="pdf-item-title">07 // Landscape</div>
+          <div class="pdf-item-content"><span class="pdf-verdict-inline">${m.current_solutions.verdict}</span> ${m.current_solutions.alternatives}</div>
+        </div>
+        <div class="pdf-item">
+          <div class="pdf-item-title">08-09 // Monetisation & Market</div>
+          <div class="pdf-item-content">
+            <span class="pdf-verdict-inline">${m.monetisation_logic.verdict}</span> ${m.monetisation_logic.upside}
+            <br><strong>Size:</strong> ${m.market_size_bottom_up}
+          </div>
+        </div>
+      </div>
+
+      <div class="pdf-col">
+        <div class="pdf-item">
+          <div class="pdf-item-title">10 // Unit Economics</div>
+          <div class="pdf-item-content"><span class="pdf-verdict-inline">${m.unit_economics_read.verdict}</span> ${m.unit_economics_read.logic}</div>
+        </div>
+        <div class="pdf-item">
+          <div class="pdf-item-title">11-12 // Moat & Defense</div>
+          <div class="pdf-item-content"><span class="pdf-verdict-inline">${m.defensibility_stack.verdict}</span> ${m.defensibility_stack.moat_details}</div>
+        </div>
+        <div class="pdf-item">
+          <div class="pdf-item-title">13 // Structural Gaps</div>
+          <table class="pdf-gaps-table">
+            ${m.gaps_table.map(g => `<tr><td style="font-weight:700; width:40%;">${g.gap}</td><td>${g.fix}</td></tr>`).join('')}
+          </table>
+        </div>
+        <div class="pdf-item" style="border:1px solid #000; padding:0.5rem; margin-top:0.5rem;">
+          <div class="pdf-item-title">Final Verdict Summary</div>
+          <div class="pdf-item-content" style="font-weight:600;">${m.final_verdict}</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:0.5rem; color:#aaa; margin-top:0.5rem; text-align:center;">SCOUT INTELLIGENCE // OPERATOR MEMO // CONFIDENTIAL</div>
+  `;
+
+  document.body.classList.add('pdf-exporting');
+
+  const opt = {
+    margin: 0,
+    filename: `Scout_Memo_${currentReport.company.replace(/\s+/g, '_')}.pdf`,
+    image: { type: 'jpeg', quality: 1.0 },
+    html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff' },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(template).save().then(() => {
+    document.body.classList.remove('pdf-exporting');
+  });
 }
 
 function showView(viewName) {
