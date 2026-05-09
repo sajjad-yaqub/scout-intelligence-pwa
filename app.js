@@ -1,7 +1,7 @@
 /**
  * Scout PWA - app.js
- * v16.3: Truth-Seeking Outreach.
- * Prioritizing content quality and genuine research-led alignment over rigid templates.
+ * v16.4: Label-Free Outreach.
+ * Purging corporate headers and placeholders. Enforcing natural conversational transitions.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -54,25 +54,25 @@ const OUTREACH_PROMPT = `You have been given:
 1. A company research memo (Deep intelligence on their model, gaps, and moats)
 2. A resume (Your proof of work)
 
-Your job is to write a high-conviction "Operator Note" FROM the person in the resume TO a key stakeholder at the company.
+Your job is to write a high-conviction "Operator Thought" FROM the person in the resume TO a key stakeholder at the company.
 
 CORE INSTRUCTIONS:
-- DO NOT FOLLOW A TEMPLATE BLINDLY. Let the research findings dictate the flow. 
-- RESEARCH DEPTH: Mention a specific, non-obvious truth you found in the memo. Something about their human mechanism or a structural shift they are undergoing.
-- GENUINE ALIGNMENT: Connect a specific proof-point from the resume (a build, a metric, a mapping) to the company's core mission. Explain why this proof makes you the "structural twin" for their next phase.
-- THE ONE BIG PROBLEM: Identify the most urgent, current "hard problem" or gap from the Scout memo. Explain exactly why you are the fix for this specific defect.
+- NO FIXED LABELS: Do not use "Note", "Key Highlights", or "Summary" as headers. They sound like corporate reports. 
+- NATURAL TRANSITIONS: Move between ideas using human prose (e.g., "The way I see it is...", "I went and mapped this out and realized...", "The hard part here is...").
+- DISCOVERY-BASED PROSE: Write as if you are sharing a discovery in real-time. Walk them through the "Found Truth" and the "Big Problem" using the declarative rhythm of someone who has actually done the work.
+- NO HALLUCINATED ATTACHMENTS: Do not mention attachments or "notes attached" unless explicitly told. Treat the message itself as the high-conviction thesis.
 
 VOICE FINGERPRINT:
 - Start from a human truth, not a feature.
-- Show your work: "let me map out why this feels off" or "I went and saw X."
-- Short declarative rhythm. No corporate jargon.
+- Show your work: Walkthrough of the reasoning process.
+- Short declarative rhythm. Zero corporate jargon.
 - Write like a person thinking out loud. High conviction, low arrogance.
 
 OUTPUT JSON:
 {
   "hook": "The core human truth or non-obvious discovery",
-  "message": "The final Operator Note. Pure prose/mail content. High quality, zero fluff.",
-  "why": "Why this specific alignment and problem-focus will land."
+  "message": "The final Operator Thought. Pure, label-free prose. Natural flow. High quality.",
+  "why": "Why this specific discovery and alignment will land."
 }`;
 
 // Helper: Call Vercel Proxy
