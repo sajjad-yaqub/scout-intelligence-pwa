@@ -54,7 +54,7 @@ const OUTREACH_PROMPT = `You have been given:
 1. A company research memo
 2. A resume
 
-Your job is to write one outreach message. Work through three steps.
+Your job is to write one outreach message FROM the person described in the resume TO a key stakeholder (Founder/Hiring Manager) at the company in the memo. Work through three steps.
 
 STEP 1 — FIND THE HOOK
 From the memo, find the ONE gap that the resume most directly addresses. It must be:
@@ -62,19 +62,23 @@ From the memo, find the ONE gap that the resume most directly addresses. It must
 - Provable — there is a direct proof point in the resume: a metric, a mechanism, a 0→1 build
 - Urgent — it is structural or high-priority for the company, not a nice-to-have
 
+State the hook in one sentence:
+"[Company] has [specific problem]. This resume shows exactly how this was solved at [Previous Company] by [specific mechanism], resulting in [metric]."
+
 STEP 2 — WRITE THE MESSAGE
 Write a message in the requested format (LinkedIn DM: 80-120 words or Email: 150-200 words).
+Perspective: Write AS the candidate from the resume.
 Voice rules:
-- Open with a human observation about their business. No "I came across your profile."
-- One specific thing from the resume that is directly relevant. Lead with what was built.
-- End with a low-friction ask. No "I'd love to explore opportunities."
-- No buzzwords. Short declarative sentences.
-- Write like a person thinking out loud. Not a cover letter.
-- Show fieldwork (mapped, interviewed, built) instead of passive leadership.
+- Open with a human observation about their business. Something you noticed from actually looking, not a press release. No "I came across your profile."
+- One specific thing from the resume that is directly relevant. Lead with what was built or what happened, not a job title.
+- End with a low-friction ask — a question or a short conversation, not "I'd love to explore opportunities."
+- No buzzwords. No "I'm passionate about." No "I'd love to connect."
+- Short declarative sentences. Write like a person thinking out loud.
+- Show fieldwork (went and mapped, interviewed, built) instead of passive leadership.
 - If there is a metric, lead with it.
 
 STEP 3 — EXPLAIN THE BET
-2-3 sentences on why this will land based on signals in the memo.
+2-3 sentences on why this will land based on signals in the memo. Why will this specific hook resonate with this specific founder?
 
 OUTPUT JSON:
 {
