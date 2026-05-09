@@ -1,7 +1,6 @@
 /**
  * Scout PWA - app.js
- * v16.7: Novelty Protocol & Pattern Interrupts.
- * Forcing non-obvious human truths and gritty research signals for crispy hooks.
+ * v16.8: PDF Export & Novelty Protocol.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -138,6 +137,9 @@ function init() {
     errorMessage: document.getElementById('error-message'),
     retryBtn: document.getElementById('retry-btn'),
     
+    // PDF Export
+    downloadPdfBtn: document.getElementById('download-pdf-btn'),
+    
     // Outreach Elements
     backToReport: document.getElementById('back-to-report'),
     resumeText: document.getElementById('resume-text'),
@@ -168,9 +170,31 @@ function setupEventListeners() {
 
   if (elements.backBtn) elements.backBtn.addEventListener('click', () => showView('home'));
   if (elements.retryBtn) elements.retryBtn.addEventListener('click', () => showView('home'));
+  if (elements.downloadPdfBtn) elements.downloadPdfBtn.addEventListener('click', handleDownloadPDF);
   
   if (elements.backToReport) elements.backToReport.addEventListener('click', () => showView('report'));
   if (elements.generateOutreachBtn) elements.generateOutreachBtn.addEventListener('click', handleGenerateOutreach);
+}
+
+function handleDownloadPDF() {
+  if (!currentReport) return;
+  const container = document.getElementById('report-container');
+  
+  // Temporarily hide the outreach trigger button for the PDF
+  const outreachBtn = document.getElementById('trigger-outreach-btn');
+  if (outreachBtn) outreachBtn.style.display = 'none';
+
+  const opt = {
+    margin: 0.5,
+    filename: `Scout_Memo_${currentReport.company.replace(/\s+/g, '_')}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#0f0f0f' },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(container).save().then(() => {
+    if (outreachBtn) outreachBtn.style.display = 'block';
+  });
 }
 
 function showView(viewName) {
