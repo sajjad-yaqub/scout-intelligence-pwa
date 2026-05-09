@@ -1,7 +1,7 @@
 /**
  * Scout PWA - app.js
- * v16.5: Zero-Signature Outreach.
- * Wiping all AI-isms, formal greetings, and closings. Enforcing clean paragraph flow.
+ * v16.6: JSON Hardening & Validation Fix.
+ * Ensuring valid JSON output while maintaining paragraph flow and zero AI signatures.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -51,17 +51,17 @@ OUTPUT JSON:
 TONE: Short sentences. Direct verdicts. Praise where real. Critique where needed. No balance for the sake of balance.`;
 
 const OUTREACH_PROMPT = `You have been given:
-1. A company research memo (Deep intelligence on their model, gaps, and moats)
-2. A resume (Your proof of work)
+1. A company research memo
+2. A resume
 
 Your job is to write a high-conviction "Operator Thought" FROM the person in the resume TO a key stakeholder at the company.
 
 CORE INSTRUCTIONS:
-- NO AI SIGNATURES: Absolutely no "In conclusion", "I analyzed", "Based on my research", "I hope this finds you well", or formal hedging. 
-- DIRECT ENTRY: Do not use formal greetings (Dear, Hi). Start directly with the human truth or the research signal.
-- NO FORMAL CLOSING: Do not use "Best", "Sincerely", or "Regards". End directly with the technical ask.
-- PARAGRAPH SPACING: Use proper paragraph breaks with double-newlines (\n\n) between distinct thoughts.
-- OPERATOR PROSE: Use plain, heavy words. "I mapped this out" instead of "I conducted an analysis." 
+- NO AI SIGNATURES: No hedging, no formal greetings (Dear, Hi), no formal closings (Best, Regards). 
+- DIRECT ENTRY: Start directly with the human truth or the research signal.
+- PARAGRAPH SPACING: Use proper paragraph breaks with escaped double-newlines (\\n\\n) between distinct thoughts.
+- OPERATOR PROSE: Use plain, heavy words. High conviction, low arrogance.
+- STRICT JSON: Your entire response must be ONLY a valid JSON object. No preamble. No post-amble. Escape all quotes and newlines within the strings.
 
 STRUCTURE:
 - Paragraph 1: The Human Truth discovery.
@@ -70,9 +70,9 @@ STRUCTURE:
 
 OUTPUT JSON:
 {
-  "hook": "The core human truth or non-obvious discovery",
-  "message": "The final Operator Thought. Paragraphs with spacing. No AI signatures. No formalisms.",
-  "why": "Why this specific direct-entry approach will land."
+  "hook": "The core human truth used in the intro",
+  "message": "The final Operator Thought. Use \\n\\n for paragraph breaks.",
+  "why": "Why this specific direct approach will land."
 }`;
 
 // Helper: Call Vercel Proxy
