@@ -69,7 +69,10 @@ async function callProxy(action, body) {
     const data = await response.json();
     
     if (!response.ok) {
-      const errorMsg = typeof data.error === 'object' ? JSON.stringify(data.error) : (data.error || \`Error \${response.status}\`);
+      let errorMsg = typeof data.error === 'object' ? JSON.stringify(data.error) : (data.error || \`Error \${response.status}\`);
+      if (response.status === 0 || errorMsg.includes('fetch')) {
+        errorMsg = "CORS / File Protocol Error: This app must be run from a local server (http://), not by opening the file directly (file://).";
+      }
       throw new Error(errorMsg);
     }
     
@@ -110,7 +113,7 @@ function init() {
     reportHeader: document.getElementById('report-title-header'),
     reportContainer: document.getElementById('report-container'),
     backBtn: document.getElementById('back-to-home'),
-    loadingCompany: document.getElementById('loading-company-name'),
+    loadingCompanyName: document.getElementById('loading-company-name'),
     errorMessage: document.getElementById('error-message'),
     retryBtn: document.getElementById('retry-btn'),
     downloadPdfBtn: document.getElementById('download-pdf-btn'),
@@ -159,7 +162,7 @@ function setupEventListeners() {
   // Report: Back
   if (elements.backBtn) elements.backBtn.addEventListener('click', () => showView('home'));
   
-  if (elements.downloadPdfBtn) elements.downloadPdfBtn.addEventListener('click', downloadPDF);
+  if (elements.downloadPdfBtn) elements.downloadPdfBtn.addEventListener('click', handleDownloadPDF);
 
   // Error: Retry
   if (elements.retryBtn) {
@@ -226,17 +229,21 @@ async function startResearchFlow(company, context) {
   
   try {
     const searchData = await callProxy('search', { 
-      query: \`\${company} what they do mechanism product details\`, 
-      search_depth: "advanced",
-      max_results: 5
+      query: \`\${company} company official website and business profile\`, 
+      search_depth: "basic",
+      max_results: 6
     });
 
-    const results = searchData.results || [];
-    if (results.length === 0) {
-      throw new Error("No search results found for this company.");
-    }
+    let results = searchData.results || [];
+    const companyClean = company.toLowerCase().replace(/[^a-z0-9]/g, '');
+    results.sort((a, b) => {
+      const aMatches = a.url.toLowerCase().includes(companyClean);
+      const bMatches = b.url.toLowerCase().includes(companyClean);
+      return bMatches - aMatches;
+    });
 
-    renderDisambiguation(results, company, context);
+    lastSearchResults = results;
+    renderDisambiguation(company, lastSearchResults, context);
     showView('disambiguation');
 
   } catch (err) {
@@ -246,7 +253,7 @@ async function startResearchFlow(company, context) {
   }
 }
 
-function renderDisambiguation(results, query, originalContext) {
+function renderDisambiguation(query, results, originalContext) {
   elements.disambiguation.innerHTML = \`
     <div style="margin-bottom: 3rem;">
       <h2 style="font-family: var(--serif); font-size: 3rem; margin-bottom: 0.5rem;">Which company?</h2>
@@ -582,7 +589,7 @@ if (document.readyState === 'loading') {
   init();
 }
 
-async function downloadPDF() {
+async function handleDownloadPDF() {
   const btn = elements.downloadPdfBtn;
   const originalHtml = btn.innerHTML;
   btn.innerHTML = '<span style="font-size:0.6rem;">EXPORTING...</span>';
