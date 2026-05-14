@@ -1,10 +1,13 @@
 /**
  * Scout PWA - app.js
- * v16.13: Simplified Outreach & Hardened UI.
+ * v16.15: Source-Link Protocol & Evidence-Backed Intelligence.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
 You think from first principles. You are blunt. You do not hedge.
+
+CITATION PROTOCOL:
+You MUST cite your claims. Every time you state a fact, pricing detail, or competitive data, append a numbered citation like [1], [2], etc., corresponding to the research sources provided.
 
 FRAMEWORK:
 Execute this exact 13-step framework. For each step, use the provided research data to reason. State findings and verdicts clearly.
@@ -29,21 +32,22 @@ OUTPUT JSON:
   "tagline": "string",
   "data_quality_score": 0-100,
   "overall_verdict_short": "Back | Pass | Watch",
+  "sources_used": [{"id": 1, "url": "string", "title": "string"}],
   "memo": {
-    "what_they_do": "string",
-    "claimed_problem": "string",
-    "the_user": "string",
-    "real_problem_stack": ["string"],
-    "user_problem_fit_verdict": { "verdict": "string", "reason": "string" },
-    "fit_gap_analysis": "string",
-    "current_solutions": { "verdict": "string", "alternatives": "string" },
-    "monetisation_logic": { "verdict": "string", "upside": "string" },
-    "market_size_bottom_up": "string",
-    "unit_economics_read": { "verdict": "string", "logic": "string" },
-    "defensibility_stack": { "verdict": "string", "moat_details": "string" },
-    "whats_working": "string",
+    "what_they_do": "string (with [n] citations)",
+    "claimed_problem": "string (with [n] citations)",
+    "the_user": "string (with [n] citations)",
+    "real_problem_stack": ["string (with [n] citations)"],
+    "user_problem_fit_verdict": { "verdict": "string", "reason": "string (with [n] citations)" },
+    "fit_gap_analysis": "string (with [n] citations)",
+    "current_solutions": { "verdict": "string", "alternatives": "string (with [n] citations)" },
+    "monetisation_logic": { "verdict": "string", "upside": "string (with [n] citations)" },
+    "market_size_bottom_up": "string (with [n] citations)",
+    "unit_economics_read": { "verdict": "string", "logic": "string (with [n] citations)" },
+    "defensibility_stack": { "verdict": "string", "moat_details": "string (with [n] citations)" },
+    "whats_working": "string (with [n] citations)",
     "gaps_table": [{ "gap": "string", "fix": "string" }],
-    "final_verdict": "string"
+    "final_verdict": "string (with [n] citations)"
   }
 }
 
@@ -149,7 +153,7 @@ function init() {
 
   renderRecentSearches();
   setupEventListeners();
-  console.log("Scout Initialized (v16.13)");
+  console.log("Scout Initialized (v16.15)");
 }
 
 function setupEventListeners() {
@@ -356,8 +360,11 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
   
   try {
     updateLoadingStep('Executing Two-Stage Agentic Hunt...');
+    let allSources = [];
     let baseContext = originalContext ? `User Context: ${originalContext}\n\n` : '';
+    
     if (selectedIndex !== -1 && lastSearchResults[selectedIndex]) {
+      allSources.push(lastSearchResults[selectedIndex]);
       baseContext += `Main Selection: ${lastSearchResults[selectedIndex].content}\n`;
     }
     
@@ -366,7 +373,13 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
       search_depth: "basic",
       max_results: 5
     });
-    baseContext += (baseData.results || []).map(r => r.content).join('\n\n');
+    
+    if (baseData.results) {
+      baseData.results.forEach(r => {
+        if (!allSources.find(s => s.url === r.url)) allSources.push(r);
+      });
+      baseContext += baseData.results.map(r => r.content).join('\n\n');
+    }
 
     updateLoadingStep('Generating deep-pillar hunt query...');
     const huntResponse = await callProxy('analyse', {
@@ -385,22 +398,35 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
       max_results: 5
     });
     
-    let finalContext = "DEEP PILLAR EVIDENCE:\n" + (huntData.results || []).map(r => r.content).join('\n') + 
-                       "\n\nBASE CONTEXT:\n" + baseContext;
-    finalContext = finalContext.substring(0, 15000); 
+    if (huntData.results) {
+      huntData.results.forEach(r => {
+        if (!allSources.find(s => s.url === r.url)) allSources.push(r);
+      });
+    }
+    
+    // Build numbered research context
+    let researchContext = "RESEARCH SOURCES:\n";
+    allSources.forEach((s, i) => {
+      researchContext += `[${i+1}] TITLE: ${s.title}\nURL: ${s.url}\nCONTENT: ${s.content}\n\n`;
+    });
 
-    updateLoadingStep('Writing Operator Memo (13-step framework)...');
+    updateLoadingStep('Writing Operator Memo with Citations...');
     const finalResponse = await callProxy('analyse', {
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Research Data:\n${finalContext}` }
+        { role: "user", content: researchContext.substring(0, 20000) }
       ],
       response_format: { type: "json_object" },
       temperature: 0.0
     });
 
     const reportData = JSON.parse(finalResponse.choices[0].message.content);
+    // Ensure sources are attached correctly if AI missed it
+    if (!reportData.sources_used) {
+      reportData.sources_used = allSources.map((s, i) => ({ id: i+1, url: s.url, title: s.title }));
+    }
+    
     currentReport = reportData;
     saveReport(reportData);
     renderReport(reportData);
@@ -410,6 +436,159 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
     console.error(err);
     if (elements.errorMessage) elements.errorMessage.textContent = `Analysis Failed: ${err.message}`;
     showView('error');
+  }
+}
+
+function renderReport(data) {
+  if (elements.reportHeader) {
+    elements.reportHeader.innerHTML = `
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span style="font-family:var(--mono); font-size:0.6rem; color:var(--accent);">ID: SCOUT_${Math.floor(Math.random()*10000)}</span>
+        <span>${data.company}</span>
+      </div>
+    `;
+  }
+  const m = data.memo;
+  const sources = data.sources_used || [];
+
+  const formatWithCitations = (text) => {
+    if (typeof text !== 'string') return text;
+    return text.replace(/\[(\d+)\]/g, (match, n) => {
+      const src = sources.find(s => s.id == n);
+      if (src) {
+        return `<sup class="citation" onclick="window.open('${src.url}', '_blank')" title="${src.title}">[${n}]</sup>`;
+      }
+      return match;
+    });
+  };
+
+  if (elements.reportContainer) {
+    elements.reportContainer.innerHTML = `
+      <div class="memo-header" style="margin-bottom: 4rem; animation: viewIn 0.8s ease;">
+        <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--accent); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span style="width: 8px; height: 8px; background: var(--accent); border-radius: 50%; display: inline-block;"></span>
+          CONFIDENTIAL OPERATOR INTELLIGENCE // ${new Date().toLocaleDateString()}
+        </div>
+        <h1>${data.company}</h1>
+        <p style="font-size: 1.5rem; color: var(--text-dim); margin-top: 1rem; font-family: var(--serif); font-style: italic;">"${data.tagline}"</p>
+        
+        <div style="margin-top: 3rem; display: flex; gap: 1.5rem; align-items: center;">
+          <div class="pill ${getVerdictClass(data.overall_verdict_short)}">${data.overall_verdict_short}</div>
+          <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); border-left: 1px solid var(--border); padding-left: 1.5rem;">
+            CONFIDENCE: ${data.data_quality_score}%
+          </div>
+        </div>
+      </div>
+
+      <div class="memo-section">
+        <div class="memo-label">01 // MECHANISM</div>
+        <div class="memo-title">What they actually do</div>
+        <div class="memo-content">${formatWithCitations(m.what_they_do)}</div>
+      </div>
+
+      <div class="memo-section">
+        <div class="memo-label">02 // NARRATIVE</div>
+        <div class="memo-title">Claimed Problem</div>
+        <div class="memo-content">${formatWithCitations(m.claimed_problem)}</div>
+      </div>
+
+      <div class="memo-section">
+        <div class="memo-label">03 // ICP</div>
+        <div class="memo-title">The Target User</div>
+        <div class="memo-content">${formatWithCitations(m.the_user)}</div>
+      </div>
+
+      <div class="memo-section">
+        <div class="memo-label">04 // GROUND TRUTH</div>
+        <div class="memo-title">Real user problem stack</div>
+        <ul class="memo-list" style="counter-reset: li;">
+          ${m.real_problem_stack.map(p => `<li>${formatWithCitations(p)}</li>`).join('')}
+        </ul>
+      </div>
+
+      <div class="memo-section">
+        <div class="memo-label">05 & 06 // CONVICTION</div>
+        <div class="memo-title">User-Problem Fit Analysis</div>
+        <div class="memo-verdict ${getVerdictClass(m.user_problem_fit_verdict.verdict)}">${m.user_problem_fit_verdict.verdict}</div>
+        <div class="memo-content" style="margin-bottom: 2rem;">${formatWithCitations(m.user_problem_fit_verdict.reason)}</div>
+        ${m.fit_gap_analysis ? `
+          <div style="background: rgba(255,71,87,0.05); border: 1px solid rgba(255,71,87,0.2); padding: 2rem; border-radius: 12px;">
+            <div class="memo-label" style="color: var(--danger);">FIT GAP DETECTED</div>
+            <div class="memo-content" style="color: #ff8a93;">${formatWithCitations(m.fit_gap_analysis)}</div>
+          </div>
+        ` : ''}
+      </div>
+
+      <div class="memo-section">
+        <div class="memo-label">07 // LANDSCAPE</div>
+        <div class="memo-title">Current Alternatives</div>
+        <div class="memo-verdict ${getVerdictClass(m.current_solutions.verdict)}">${m.current_solutions.verdict}</div>
+        <div class="memo-content">${formatWithCitations(m.current_solutions.alternatives)}</div>
+      </div>
+
+      <div class="memo-section">
+        <div class="memo-label">08 & 09 // UPSIDE</div>
+        <div class="memo-title">Monetisation & Market Economics</div>
+        <div class="memo-verdict ${getVerdictClass(m.monetisation_logic.verdict)}">${m.monetisation_logic.verdict}</div>
+        <div class="memo-content" style="margin-bottom: 1.5rem;"><strong>Value Extraction:</strong> ${formatWithCitations(m.monetisation_logic.upside)}</div>
+        <div class="memo-content"><strong>Market Read:</strong> ${formatWithCitations(m.market_size_bottom_up)}</div>
+      </div>
+
+      <div class="memo-section">
+        <div class="memo-label">10 // PROFITABILITY</div>
+        <div class="memo-title">Unit Economics & CM2/CM3</div>
+        <div class="memo-verdict ${getVerdictClass(m.unit_economics_read.verdict)}">${m.unit_economics_read.verdict}</div>
+        <div class="memo-content">${formatWithCitations(m.unit_economics_read.logic)}</div>
+      </div>
+
+      <div class="memo-section">
+        <div class="memo-label">11 & 12 // DEFENSE</div>
+        <div class="memo-title">Moat & Structural Hardness</div>
+        <div class="memo-verdict ${getVerdictClass(m.defensibility_stack.verdict)}">${m.defensibility_stack.verdict}</div>
+        <div class="memo-content">${formatWithCitations(m.defensibility_stack.moat_details)}</div>
+      </div>
+
+      <div class="memo-section">
+        <div class="memo-label">13 // STRATEGIC REFRAME</div>
+        <div class="memo-title">Identified Gaps & Required Fixes</div>
+        <table class="memo-table">
+          <thead><tr><th>STRUCTURAL GAP</th><th>OPERATOR FIX</th></tr></thead>
+          <tbody>
+            ${m.gaps_table.map(g => `<tr><td style="color:var(--danger); font-weight:600;">${formatWithCitations(g.gap)}</td><td style="color:var(--accent);">${formatWithCitations(g.fix)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="memo-section" style="background: var(--surface); padding: 3rem; border-radius: 16px; margin-top: 4rem; border: 1px solid var(--border-strong);">
+        <div class="memo-label" style="color: var(--accent);">EXECUTIVE SUMMARY</div>
+        <div class="memo-title">Final Verdict</div>
+        <div class="memo-content" style="font-weight: 500; font-size: 1.25rem; line-height: 1.4;">${formatWithCitations(m.final_verdict)}</div>
+      </div>
+
+      <!-- Intelligence Sources Section -->
+      <div class="memo-section" style="border-bottom: none;">
+        <div class="memo-label">INTELLIGENCE SOURCES</div>
+        <div class="sources-list" style="display:flex; flex-direction:column; gap:0.75rem; margin-top:1.5rem;">
+          ${sources.map(s => `
+            <div style="font-size:0.8rem; display:flex; gap:1rem;">
+              <span style="color:var(--accent); font-family:var(--mono); font-weight:700;">[${s.id}]</span>
+              <a href="${s.url}" target="_blank" style="color:var(--text-dim); text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.title}</a>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div style="margin-top: 4rem; padding-bottom: 6rem; text-align: center;">
+        <button id="trigger-outreach-btn" class="btn-primary" style="background: var(--accent); color: #000; width: 100%; max-width: 400px;">
+          Draft Outreach Message
+        </button>
+      </div>
+    `;
+    
+    // Add event listener to the dynamically rendered button
+    document.getElementById('trigger-outreach-btn').addEventListener('click', () => {
+      showView('outreach');
+    });
   }
 }
 
@@ -503,134 +682,6 @@ function getVerdictClass(verdict) {
   if (v.includes('⚠️') || v.includes('weak') || v.includes('ugly') || v.includes('imperfect') || v.includes('watch')) return 'warning';
   if (v.includes('❌') || v.includes('wrong') || v.includes('negative') || v.includes('enough') || v.includes('pass')) return 'negative';
   return '';
-}
-
-function renderReport(data) {
-  if (elements.reportHeader) {
-    elements.reportHeader.innerHTML = `
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <span style="font-family:var(--mono); font-size:0.6rem; color:var(--accent);">ID: SCOUT_${Math.floor(Math.random()*10000)}</span>
-        <span>${data.company}</span>
-      </div>
-    `;
-  }
-  const m = data.memo;
-  
-  if (elements.reportContainer) {
-    elements.reportContainer.innerHTML = `
-      <div class="memo-header" style="margin-bottom: 4rem; animation: viewIn 0.8s ease;">
-        <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--accent); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-          <span style="width: 8px; height: 8px; background: var(--accent); border-radius: 50%; display: inline-block;"></span>
-          CONFIDENTIAL OPERATOR INTELLIGENCE // ${new Date().toLocaleDateString()}
-        </div>
-        <h1>${data.company}</h1>
-        <p style="font-size: 1.5rem; color: var(--text-dim); margin-top: 1rem; font-family: var(--serif); font-style: italic;">"${data.tagline}"</p>
-        
-        <div style="margin-top: 3rem; display: flex; gap: 1.5rem; align-items: center;">
-          <div class="pill ${getVerdictClass(data.overall_verdict_short)}">${data.overall_verdict_short}</div>
-          <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); border-left: 1px solid var(--border); padding-left: 1.5rem;">
-            CONFIDENCE: ${data.data_quality_score}%
-          </div>
-        </div>
-      </div>
-
-      <div class="memo-section">
-        <div class="memo-label">01 // MECHANISM</div>
-        <div class="memo-title">What they actually do</div>
-        <div class="memo-content">${m.what_they_do}</div>
-      </div>
-
-      <div class="memo-section">
-        <div class="memo-label">02 // NARRATIVE</div>
-        <div class="memo-title">Claimed Problem</div>
-        <div class="memo-content">${m.claimed_problem}</div>
-      </div>
-
-      <div class="memo-section">
-        <div class="memo-label">03 // ICP</div>
-        <div class="memo-title">The Target User</div>
-        <div class="memo-content">${m.the_user}</div>
-      </div>
-
-      <div class="memo-section">
-        <div class="memo-label">04 // GROUND TRUTH</div>
-        <div class="memo-title">Real user problem stack</div>
-        <ul class="memo-list" style="counter-reset: li;">
-          ${m.real_problem_stack.map(p => `<li>${p}</li>`).join('')}
-        </ul>
-      </div>
-
-      <div class="memo-section">
-        <div class="memo-label">05 & 06 // CONVICTION</div>
-        <div class="memo-title">User-Problem Fit Analysis</div>
-        <div class="memo-verdict ${getVerdictClass(m.user_problem_fit_verdict.verdict)}">${m.user_problem_fit_verdict.verdict}</div>
-        <div class="memo-content" style="margin-bottom: 2rem;">${m.user_problem_fit_verdict.reason}</div>
-        ${m.fit_gap_analysis ? `
-          <div style="background: rgba(255,71,87,0.05); border: 1px solid rgba(255,71,87,0.2); padding: 2rem; border-radius: 12px;">
-            <div class="memo-label" style="color: var(--danger);">FIT GAP DETECTED</div>
-            <div class="memo-content" style="color: #ff8a93;">${m.fit_gap_analysis}</div>
-          </div>
-        ` : ''}
-      </div>
-
-      <div class="memo-section">
-        <div class="memo-label">07 // LANDSCAPE</div>
-        <div class="memo-title">Current Alternatives</div>
-        <div class="memo-verdict ${getVerdictClass(m.current_solutions.verdict)}">${m.current_solutions.verdict}</div>
-        <div class="memo-content">${m.current_solutions.alternatives}</div>
-      </div>
-
-      <div class="memo-section">
-        <div class="memo-label">08 & 09 // UPSIDE</div>
-        <div class="memo-title">Monetisation & Market Economics</div>
-        <div class="memo-verdict ${getVerdictClass(m.monetisation_logic.verdict)}">${m.monetisation_logic.verdict}</div>
-        <div class="memo-content" style="margin-bottom: 1.5rem;"><strong>Value Extraction:</strong> ${m.monetisation_logic.upside}</div>
-        <div class="memo-content"><strong>Market Read:</strong> ${m.market_size_bottom_up}</div>
-      </div>
-
-      <div class="memo-section">
-        <div class="memo-label">10 // PROFITABILITY</div>
-        <div class="memo-title">Unit Economics & CM2/CM3</div>
-        <div class="memo-verdict ${getVerdictClass(m.unit_economics_read.verdict)}">${m.unit_economics_read.verdict}</div>
-        <div class="memo-content">${m.unit_economics_read.logic}</div>
-      </div>
-
-      <div class="memo-section">
-        <div class="memo-label">11 & 12 // DEFENSE</div>
-        <div class="memo-title">Moat & Structural Hardness</div>
-        <div class="memo-verdict ${getVerdictClass(m.defensibility_stack.verdict)}">${m.defensibility_stack.verdict}</div>
-        <div class="memo-content">${m.defensibility_stack.moat_details}</div>
-      </div>
-
-      <div class="memo-section">
-        <div class="memo-label">13 // STRATEGIC REFRAME</div>
-        <div class="memo-title">Identified Gaps & Required Fixes</div>
-        <table class="memo-table">
-          <thead><tr><th>STRUCTURAL GAP</th><th>OPERATOR FIX</th></tr></thead>
-          <tbody>
-            ${m.gaps_table.map(g => `<tr><td style="color:var(--danger); font-weight:600;">${g.gap}</td><td style="color:var(--accent);">${g.fix}</td></tr>`).join('')}
-          </tbody>
-        </table>
-      </div>
-
-      <div class="memo-section" style="background: var(--surface); padding: 3rem; border-radius: 16px; margin-top: 4rem; border: 1px solid var(--border-strong);">
-        <div class="memo-label" style="color: var(--accent);">EXECUTIVE SUMMARY</div>
-        <div class="memo-title">Final Verdict</div>
-        <div class="memo-content" style="font-weight: 500; font-size: 1.25rem; line-height: 1.4;">${m.final_verdict}</div>
-      </div>
-
-      <div style="margin-top: 4rem; padding-bottom: 6rem; text-align: center;">
-        <button id="trigger-outreach-btn" class="btn-primary" style="background: var(--accent); color: #000; width: 100%; max-width: 400px;">
-          Draft Outreach Message
-        </button>
-      </div>
-    `;
-    
-    // Add event listener to the dynamically rendered button
-    document.getElementById('trigger-outreach-btn').addEventListener('click', () => {
-      showView('outreach');
-    });
-  }
 }
 
 // Global exposure
