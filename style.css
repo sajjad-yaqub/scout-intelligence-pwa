@@ -1,59 +1,93 @@
 :root {
-  --bg: #0a0a0a;
-  --surface: #141414;
-  --text: #f0f0f0;
-  --text-dim: #a0a0a0;
+  --bg: #0f0f0f;
+  --surface: #1a1a1a;
+  --border: #2a2a2a;
+  --border-strong: #333;
+  --text: #ffffff;
+  --text-dim: #e0e0e0;
+  --text-muted: #666;
   --accent: #00ff88;
-  --accent-soft: rgba(0, 255, 136, 0.1);
-  --border: rgba(255,255,255,0.08);
-  --border-strong: rgba(255,255,255,0.15);
-  --glass: rgba(255,255,255,0.03);
-  --serif: 'Instrument Serif', serif;
-  --mono: 'JetBrains Mono', monospace;
-  --font-sans: 'Inter', -apple-system, blinkmacsystemfont, sans-serif;
-  --positive: #00ff88;
+  --accent-soft: rgba(0, 255, 136, 0.05);
   --warning: #f1c40f;
   --negative: #ff4757;
-  --text-muted: #666;
-  --danger: #ff4757;
-}
-
-/* Safety Cleanup v16.13 */
-.format-selector, .format-chip, .version-tag, [data-version] {
-  display: none !important;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --serif: 'Instrument Serif', serif;
 }
 
 * {
-  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  -webkit-font-smoothing: antialiased;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--bg);
+  background-color: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
   line-height: 1.6;
   overflow-x: hidden;
 }
 
-.view {
+#app {
+  max-width: 100%;
   min-height: 100vh;
   padding: 2rem;
-  transition: opacity 0.4s ease;
+}
+
+.view {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-top: 2rem;
 }
 
 .hidden { display: none !important; }
 
+/* Typography */
+h1 {
+  font-family: var(--serif);
+  font-size: 4rem;
+  line-height: 0.9;
+  font-weight: 400;
+  margin-bottom: 1rem;
+}
+
+/* Banners */
+.banner {
+  background: var(--accent);
+  color: #000;
+  padding: 0.75rem;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-pill {
+  background: #000;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 1rem;
+  border-radius: 100px;
+  font-size: 0.6rem;
+  cursor: pointer;
+}
+
 /* Home Screen */
 .home-header {
   text-align: center;
-  margin: 10vh 0 5vh;
+  margin-bottom: 5rem;
+  padding-top: 5vh;
 }
 
 .home-header h1 {
-  font-family: var(--serif);
   font-size: 5rem;
   font-weight: 400;
   letter-spacing: -0.02em;
