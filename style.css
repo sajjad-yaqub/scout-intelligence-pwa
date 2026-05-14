@@ -475,7 +475,29 @@ input[type="radio"]:checked + .format-chip {
   display: none !important;
 }
 
-/* Safety Cleanup v16.13 */
-.format-selector, .format-chip, .version-tag, [data-version] {
-  display: none !important;
+/* Chips Interface */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.chip {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  padding: 0.6rem 1.2rem;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-family: var(--mono);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--text-dim);
+}
+
+.chip:hover {
+  background: rgba(46, 213, 115, 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-2px);
 }
