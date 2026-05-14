@@ -5,10 +5,10 @@
   --glass: rgba(10, 10, 10, 0.7);
   --accent: #2ed573;
   --text: #ffffff;
-  --text-dim: #888888;
-  --text-muted: #444444;
-  --border: rgba(255, 255, 255, 0.05);
-  --border-strong: rgba(255, 255, 255, 0.1);
+  --text-dim: #bbbbbb; /* Brightened from #888888 */
+  --text-muted: #666666; /* Brightened from #444444 */
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.2);
   --sans: 'Inter', -apple-system, sans-serif;
   --serif: 'Instrument Serif', serif;
   --mono: 'JetBrains Mono', monospace;
@@ -26,15 +26,12 @@
 
 body {
   background: var(--bg);
+  background-image: radial-gradient(circle at 50% -20%, #1a1a1a 0%, transparent 70%);
   color: var(--text);
   font-family: var(--sans);
   line-height: 1.5;
   overflow-x: hidden;
   letter-spacing: -0.01em;
-  /* Subtle grain texture */
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  background-attachment: fixed;
-  opacity: 0.99;
 }
 
 #app {
@@ -77,7 +74,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.4em;
   color: var(--accent);
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 /* Search Interface */
@@ -93,7 +90,7 @@ body {
 input[type="text"], textarea {
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--border-strong);
+  border-bottom: 2px solid var(--border-strong); /* Thickened line */
   padding: 1.5rem 0;
   color: var(--text);
   font-size: 1.75rem;
@@ -101,6 +98,11 @@ input[type="text"], textarea {
   width: 100%;
   transition: all 0.4s ease;
   border-radius: 0;
+}
+
+::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
 }
 
 input[type="text"]:focus, textarea:focus {
