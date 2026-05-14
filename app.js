@@ -1,6 +1,7 @@
 /**
  * Scout PWA - app.js
- * v16.13: Simplified Outreach & Hardened PDF.
+ * v15: Outreach Engine Integration.
+ * Added 3-step outreach generation framework.
  */
 
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
@@ -43,11 +44,12 @@ OUTPUT JSON:
     "defensibility_stack": { "verdict": "string", "moat_details": "string" },
     "whats_working": "string",
     "gaps_table": [{ "gap": "string", "fix": "string" }],
+    "references": ["string"],
     "final_verdict": "string"
   }
 }
 
-TONE: Short sentences. Direct verdicts. Praise where real. Critique where needed. No balance for the sake of balance.`;
+TONE: Short sentences. Direct verdicts. Always include source references (URLs) for key claims. Praise where real. Critique where needed. No balance for the sake of balance.`;
 
 const OUTREACH_PROMPT = `You have been given:
 1. A company research memo
@@ -87,7 +89,7 @@ async function callProxy(action, body) {
     const data = await response.json();
     
     if (!response.ok) {
-      const errorMsg = typeof data.error === 'object' ? JSON.stringify(data.error) : (data.error || `Error ${response.status}`);
+      const errorMsg = typeof data.error === 'object' ? JSON.stringify(data.error) : (data.error || `Error \${response.status}`);
       throw new Error(errorMsg);
     }
     
@@ -149,7 +151,7 @@ function init() {
 
   renderRecentSearches();
   setupEventListeners();
-  console.log("Scout Initialized (v16.13)");
+  console.log("Scout Initialized (v16)");
 }
 
 function setupEventListeners() {
@@ -185,12 +187,12 @@ function handleDownloadPDF() {
   template.innerHTML = `
     <div class="pdf-header-compact">
       <div>
-        <h1>${currentReport.company}</h1>
-        <p style="font-size:0.7rem; font-style:italic;">"${currentReport.tagline}"</p>
+        <h1>\${currentReport.company}</h1>
+        <p style="font-size:0.7rem; font-style:italic;">"\${currentReport.tagline}"</p>
       </div>
       <div style="text-align:right;">
-        <div style="font-weight:900; font-size:0.8rem;">VERDICT: ${currentReport.overall_verdict_short}</div>
-        <div style="font-size:0.6rem; color:#666;">CONFIDENCE: ${currentReport.data_quality_score}% | ${new Date().toLocaleDateString()}</div>
+        <div style="font-weight:900; font-size:0.8rem;">VERDICT: \${currentReport.overall_verdict_short}</div>
+        <div style="font-size:0.6rem; color:#666;">CONFIDENCE: \${currentReport.data_quality_score}% | \${new Date().toLocaleDateString()}</div>
       </div>
     </div>
 
@@ -198,28 +200,28 @@ function handleDownloadPDF() {
       <div class="pdf-col">
         <div class="pdf-item">
           <div class="pdf-item-title">01-02 // Mechanism & Problem</div>
-          <div class="pdf-item-content"><strong>Do:</strong> ${m.what_they_do} <br><strong>Claim:</strong> ${m.claimed_problem}</div>
+          <div class="pdf-item-content"><strong>Do:</strong> \${m.what_they_do} <br><strong>Claim:</strong> \${m.claimed_problem}</div>
         </div>
         <div class="pdf-item">
           <div class="pdf-item-title">03-04 // ICP & Ground Truth</div>
-          <div class="pdf-item-content"><strong>User:</strong> ${m.the_user} <br><strong>Stack:</strong> ${m.real_problem_stack.join(' | ')}</div>
+          <div class="pdf-item-content"><strong>User:</strong> \${m.the_user} <br><strong>Stack:</strong> \${m.real_problem_stack.join(' | ')}</div>
         </div>
         <div class="pdf-item">
           <div class="pdf-item-title">05-06 // User-Problem Fit</div>
           <div class="pdf-item-content">
-            <span class="pdf-verdict-inline">${m.user_problem_fit_verdict.verdict}</span> ${m.user_problem_fit_verdict.reason}
-            ${m.fit_gap_analysis ? `<br><strong style="color:#000;">GAP:</strong> ${m.fit_gap_analysis}` : ''}
+            <span class="pdf-verdict-inline">\${m.user_problem_fit_verdict.verdict}</span> \${m.user_problem_fit_verdict.reason}
+            \${m.fit_gap_analysis ? `<br><strong style="color:#000;">GAP:</strong> \${m.fit_gap_analysis}` : ''}
           </div>
         </div>
         <div class="pdf-item">
           <div class="pdf-item-title">07 // Landscape</div>
-          <div class="pdf-item-content"><span class="pdf-verdict-inline">${m.current_solutions.verdict}</span> ${m.current_solutions.alternatives}</div>
+          <div class="pdf-item-content"><span class="pdf-verdict-inline">\${m.current_solutions.verdict}</span> \${m.current_solutions.alternatives}</div>
         </div>
         <div class="pdf-item">
           <div class="pdf-item-title">08-09 // Monetisation & Market</div>
           <div class="pdf-item-content">
-            <span class="pdf-verdict-inline">${m.monetisation_logic.verdict}</span> ${m.monetisation_logic.upside}
-            <br><strong>Size:</strong> ${m.market_size_bottom_up}
+            <span class="pdf-verdict-inline">\${m.monetisation_logic.verdict}</span> \${m.monetisation_logic.upside}
+            <br><strong>Size:</strong> \${m.market_size_bottom_up}
           </div>
         </div>
       </div>
@@ -227,21 +229,21 @@ function handleDownloadPDF() {
       <div class="pdf-col">
         <div class="pdf-item">
           <div class="pdf-item-title">10 // Unit Economics</div>
-          <div class="pdf-item-content"><span class="pdf-verdict-inline">${m.unit_economics_read.verdict}</span> ${m.unit_economics_read.logic}</div>
+          <div class="pdf-item-content"><span class="pdf-verdict-inline">\${m.unit_economics_read.verdict}</span> \${m.unit_economics_read.logic}</div>
         </div>
         <div class="pdf-item">
           <div class="pdf-item-title">11-12 // Moat & Defense</div>
-          <div class="pdf-item-content"><span class="pdf-verdict-inline">${m.defensibility_stack.verdict}</span> ${m.defensibility_stack.moat_details}</div>
+          <div class="pdf-item-content"><span class="pdf-verdict-inline">\${m.defensibility_stack.verdict}</span> \${m.defensibility_stack.moat_details}</div>
         </div>
         <div class="pdf-item">
           <div class="pdf-item-title">13 // Structural Gaps</div>
           <table class="pdf-gaps-table">
-            ${m.gaps_table.map(g => `<tr><td style="font-weight:700; width:40%;">${g.gap}</td><td>${g.fix}</td></tr>`).join('')}
+            \${m.gaps_table.map(g => `<tr><td style="font-weight:700; width:40%;">\${g.gap}</td><td>\${g.fix}</td></tr>`).join('')}
           </table>
         </div>
         <div class="pdf-item" style="border:1px solid #000; padding:0.5rem; margin-top:0.5rem;">
           <div class="pdf-item-title">Final Verdict Summary</div>
-          <div class="pdf-item-content" style="font-weight:600;">${m.final_verdict}</div>
+          <div class="pdf-item-content" style="font-weight:600;">\${m.final_verdict}</div>
         </div>
       </div>
     </div>
@@ -252,7 +254,7 @@ function handleDownloadPDF() {
 
   const opt = {
     margin: 0,
-    filename: `Scout_Memo_${currentReport.company.replace(/\s+/g, '_')}.pdf`,
+    filename: `Scout_Memo_\${currentReport.company.replace(/\s+/g, '_')}.pdf`,
     image: { type: 'jpeg', quality: 1.0 },
     html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff' },
     jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
@@ -280,7 +282,7 @@ function updateLoadingStep(step) {
     stepEl.style.cssText = "font-family:var(--mono); font-size:0.7rem; color:var(--accent); margin-top:1rem; letter-spacing:0.1em;";
     elements.loadingCompanyName.parentElement.appendChild(stepEl);
   }
-  if (stepEl) stepEl.textContent = `> ${step}`;
+  if (stepEl) stepEl.textContent = `> \${step}`;
 }
 
 async function startResearchFlow(company, context) {
@@ -289,7 +291,7 @@ async function startResearchFlow(company, context) {
 
   try {
     const searchData = await callProxy('search', {
-      query: `${company} company official website and business profile`,
+      query: `\${company} company official website and business profile`,
       search_depth: "basic",
       max_results: 6
     });
@@ -308,7 +310,7 @@ async function startResearchFlow(company, context) {
 
   } catch (err) {
     console.error(err);
-    if (elements.errorMessage) elements.errorMessage.textContent = `Search Error: ${err.message}`;
+    if (elements.errorMessage) elements.errorMessage.textContent = `Search Error: \${err.message}`;
     showView('error');
   }
 }
@@ -318,29 +320,29 @@ function renderDisambiguation(query, results, originalContext) {
   views.disambiguation.innerHTML = `
     <header class="home-header">
       <div style="font-family:var(--mono); font-size:0.6rem; color:var(--accent); margin-bottom:1rem; letter-spacing:0.2em;">TARGET IDENTIFICATION</div>
-      <h1 style="font-size:3rem;">Which ${query}?</h1>
+      <h1 style="font-size:3rem;">Which \${query}?</h1>
       <p>Select the precise entity for Operator Intelligence</p>
     </header>
     <div class="disambiguation-list" style="display:flex; flex-direction:column; gap:1rem; max-width:600px; margin:0 auto;">
-      ${results.length === 0 ? '<p>No results found.</p>' : results.map((r, i) => {
+      \${results.length === 0 ? '<p>No results found.</p>' : results.map((r, i) => {
         const domain = new URL(r.url).hostname;
-        const iconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+        const iconUrl = `https://www.google.com/s2/favicons?domain=\${domain}&sz=128`;
         return `
-          <div class="disambiguation-item ${r.url.toLowerCase().includes(companyClean) ? 'priority' : ''}" 
+          <div class="disambiguation-item \${r.url.toLowerCase().includes(companyClean) ? 'priority' : ''}" 
                style="display:flex; gap:1.5rem; align-items:center; background:var(--glass); border:1px solid var(--border); padding:1.5rem; border-radius:16px; cursor:pointer; transition:all 0.3s ease;"
-               onclick="startOptimizedAnalysis('${query}', ${i}, '${originalContext}')">
-            <img src="${iconUrl}" style="width:48px; height:48px; border-radius:10px; background:#fff; padding:4px;" onerror="this.src='icons/icon-192.svg'">
+               onclick="startOptimizedAnalysis('\${query}', \${i}, '\${originalContext}')">
+            <img src="\${iconUrl}" style="width:48px; height:48px; border-radius:10px; background:#fff; padding:4px;" onerror="this.src='icons/icon-192.svg'">
             <div style="flex:1;">
-              <h4 style="font-family:var(--serif); font-size:1.4rem; color:var(--text);">${r.title}</h4>
-              <p style="font-family:var(--mono); font-size:0.65rem; color:var(--accent); margin:0.2rem 0;">${domain}</p>
-              <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.4; margin-top:0.5rem;">${r.content.substring(0, 120)}...</p>
+              <h4 style="font-family:var(--serif); font-size:1.4rem; color:var(--text);">\${r.title}</h4>
+              <p style="font-family:var(--mono); font-size:0.65rem; color:var(--accent); margin:0.2rem 0;">\${domain}</p>
+              <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.4; margin-top:0.5rem;">\${r.content.substring(0, 120)}...</p>
             </div>
           </div>
         `;
       }).join('')}
       <div class="disambiguation-item" 
            style="background:rgba(255,255,255,0.02); border:1px dashed var(--border); padding:1.5rem; border-radius:16px; cursor:pointer; text-align:center;"
-           onclick="startOptimizedAnalysis('${query}', -1, '${originalContext}')">
+           onclick="startOptimizedAnalysis('\${query}', -1, '\${originalContext}')">
         <h4 style="font-size:1rem; color:var(--text-dim);">None of these / General Research</h4>
       </div>
     </div>
@@ -356,13 +358,13 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
   
   try {
     updateLoadingStep('Executing Two-Stage Agentic Hunt...');
-    let baseContext = originalContext ? `User Context: ${originalContext}\n\n` : '';
+    let baseContext = originalContext ? `User Context: \${originalContext}\n\n` : '';
     if (selectedIndex !== -1 && lastSearchResults[selectedIndex]) {
-      baseContext += `Main Selection: ${lastSearchResults[selectedIndex].content}\n`;
+      baseContext += `Main Selection: \${lastSearchResults[selectedIndex].content}\n`;
     }
     
     const baseData = await callProxy('search', {
-      query: `${query} business model operations product features target customers`,
+      query: `\${query} business model operations product features target customers`,
       search_depth: "basic",
       max_results: 5
     });
@@ -378,9 +380,9 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
     });
     const targetedQuery = huntResponse.choices[0].message.content.trim().replace(/^"|"$/g, '');
 
-    updateLoadingStep(`Hunting for truth: ${targetedQuery.toLowerCase().substring(0, 30)}...`);
+    updateLoadingStep(`Hunting for truth: \${targetedQuery.toLowerCase().substring(0, 30)}...`);
     const huntData = await callProxy('search', {
-      query: `${query} ${targetedQuery}`,
+      query: `\${query} \${targetedQuery}`,
       search_depth: "basic",
       max_results: 5
     });
@@ -394,7 +396,7 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Research Data:\n${finalContext}` }
+        { role: "user", content: `Research Data:\n\${finalContext}` }
       ],
       response_format: { type: "json_object" },
       temperature: 0.0
@@ -408,7 +410,7 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
 
   } catch (err) {
     console.error(err);
-    if (elements.errorMessage) elements.errorMessage.textContent = `Analysis Failed: ${err.message}`;
+    if (elements.errorMessage) elements.errorMessage.textContent = `Analysis Failed: \${err.message}`;
     showView('error');
   }
 }
@@ -427,7 +429,7 @@ async function handleGenerateOutreach() {
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: OUTREACH_PROMPT },
-        { role: "user", content: `COMPANY MEMO:\n${JSON.stringify(currentReport)}\n\nRESUME:\n${resume}` }
+        { role: "user", content: `COMPANY MEMO:\n\${JSON.stringify(currentReport)}\n\nRESUME:\n\${resume}` }
       ],
       response_format: { type: "json_object" },
       temperature: 0.0
@@ -447,14 +449,14 @@ function renderOutreachResult(data) {
   elements.outreachResult.classList.remove('hidden');
   elements.outreachResult.innerHTML = `
     <div class="outreach-result-card">
-      <div class="memo-label">INTELLIGENCE HOOK</div>
-      <div class="memo-content" style="font-weight:700; color:var(--accent); margin-bottom:2rem;">${data.hook}</div>
+      <div class="memo-label">Step 1 // THE HOOK</div>
+      <div class="memo-content" style="font-weight:700; color:var(--accent); margin-bottom:2rem;">\${data.hook}</div>
       
-      <div class="memo-label">MISSION MESSAGE <span class="copy-badge" onclick="copyText('outreach-msg')">COPY</span></div>
-      <div id="outreach-msg" class="memo-content" style="background:rgba(255,255,255,0.03); padding:1.5rem; border-radius:8px; border:1px solid var(--border); white-space:pre-wrap; line-height:1.8;">${data.message}</div>
+      <div class="memo-label">Step 2 // THE MESSAGE <span class="copy-badge" onclick="copyText('outreach-msg')">COPY</span></div>
+      <div id="outreach-msg" class="memo-content" style="background:rgba(255,255,255,0.03); padding:1.5rem; border-radius:8px; border:1px solid var(--border); white-space:pre-wrap;">\${data.message}</div>
       
-      <div class="memo-label" style="margin-top:2rem;">THE BET</div>
-      <div class="memo-content" style="font-style:italic; color:var(--text-dim);">${data.why}</div>
+      <div class="memo-label" style="margin-top:2rem;">Step 3 // THE BET</div>
+      <div class="memo-content" style="font-style:italic; color:var(--text-dim);">\${data.why}</div>
     </div>
   `;
   window.scrollTo({ top: elements.outreachResult.offsetTop - 100, behavior: 'smooth' });
@@ -509,8 +511,8 @@ function renderReport(data) {
   if (elements.reportHeader) {
     elements.reportHeader.innerHTML = `
       <div style="display:flex; align-items:center; gap:0.75rem;">
-        <span style="font-family:var(--mono); font-size:0.6rem; color:var(--accent);">ID: SCOUT_${Math.floor(Math.random()*10000)}</span>
-        <span>${data.company}</span>
+        <span style="font-family:var(--mono); font-size:0.6rem; color:var(--accent);">ID: SCOUT_\${Math.floor(Math.random()*10000)}</span>
+        <span>\${data.company}</span>
       </div>
     `;
   }
@@ -521,15 +523,15 @@ function renderReport(data) {
       <div class="memo-header" style="margin-bottom: 4rem; animation: viewIn 0.8s ease;">
         <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--accent); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
           <span style="width: 8px; height: 8px; background: var(--accent); border-radius: 50%; display: inline-block;"></span>
-          CONFIDENTIAL OPERATOR INTELLIGENCE // ${new Date().toLocaleDateString()}
+          CONFIDENTIAL OPERATOR INTELLIGENCE // \${new Date().toLocaleDateString()}
         </div>
-        <h1>${data.company}</h1>
-        <p style="font-size: 1.5rem; color: var(--text-dim); margin-top: 1rem; font-family: var(--serif); font-style: italic;">"${data.tagline}"</p>
+        <h1>\${data.company}</h1>
+        <p style="font-size: 1.5rem; color: var(--text-dim); margin-top: 1rem; font-family: var(--serif); font-style: italic;">"\${data.tagline}"</p>
         
         <div style="margin-top: 3rem; display: flex; gap: 1.5rem; align-items: center;">
-          <div class="pill ${getVerdictClass(data.overall_verdict_short)}">${data.overall_verdict_short}</div>
+          <div class="pill \${getVerdictClass(data.overall_verdict_short)}">\${data.overall_verdict_short}</div>
           <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); border-left: 1px solid var(--border); padding-left: 1.5rem;">
-            CONFIDENCE: ${data.data_quality_score}%
+            CONFIDENCE: \${data.data_quality_score}%
           </div>
         </div>
       </div>
@@ -537,38 +539,38 @@ function renderReport(data) {
       <div class="memo-section">
         <div class="memo-label">01 // MECHANISM</div>
         <div class="memo-title">What they actually do</div>
-        <div class="memo-content">${m.what_they_do}</div>
+        <div class="memo-content">\${m.what_they_do}</div>
       </div>
 
       <div class="memo-section">
         <div class="memo-label">02 // NARRATIVE</div>
         <div class="memo-title">Claimed Problem</div>
-        <div class="memo-content">${m.claimed_problem}</div>
+        <div class="memo-content">\${m.claimed_problem}</div>
       </div>
 
       <div class="memo-section">
         <div class="memo-label">03 // ICP</div>
         <div class="memo-title">The Target User</div>
-        <div class="memo-content">${m.the_user}</div>
+        <div class="memo-content">\${m.the_user}</div>
       </div>
 
       <div class="memo-section">
         <div class="memo-label">04 // GROUND TRUTH</div>
         <div class="memo-title">Real user problem stack</div>
         <ul class="memo-list" style="counter-reset: li;">
-          ${m.real_problem_stack.map(p => `<li>${p}</li>`).join('')}
+          \${m.real_problem_stack.map(p => `<li>\${p}</li>`).join('')}
         </ul>
       </div>
 
       <div class="memo-section">
         <div class="memo-label">05 & 06 // CONVICTION</div>
         <div class="memo-title">User-Problem Fit Analysis</div>
-        <div class="memo-verdict ${getVerdictClass(m.user_problem_fit_verdict.verdict)}">${m.user_problem_fit_verdict.verdict}</div>
-        <div class="memo-content" style="margin-bottom: 2rem;">${m.user_problem_fit_verdict.reason}</div>
-        ${m.fit_gap_analysis ? `
+        <div class="memo-verdict \${getVerdictClass(m.user_problem_fit_verdict.verdict)}">\${m.user_problem_fit_verdict.verdict}</div>
+        <div class="memo-content" style="margin-bottom: 2rem;">\${m.user_problem_fit_verdict.reason}</div>
+        \${m.fit_gap_analysis ? `
           <div style="background: rgba(255,71,87,0.05); border: 1px solid rgba(255,71,87,0.2); padding: 2rem; border-radius: 12px;">
             <div class="memo-label" style="color: var(--danger);">FIT GAP DETECTED</div>
-            <div class="memo-content" style="color: #ff8a93;">${m.fit_gap_analysis}</div>
+            <div class="memo-content" style="color: #ff8a93;">\${m.fit_gap_analysis}</div>
           </div>
         ` : ''}
       </div>
@@ -576,30 +578,30 @@ function renderReport(data) {
       <div class="memo-section">
         <div class="memo-label">07 // LANDSCAPE</div>
         <div class="memo-title">Current Alternatives</div>
-        <div class="memo-verdict ${getVerdictClass(m.current_solutions.verdict)}">${m.current_solutions.verdict}</div>
-        <div class="memo-content">${m.current_solutions.alternatives}</div>
+        <div class="memo-verdict \${getVerdictClass(m.current_solutions.verdict)}">\${m.current_solutions.verdict}</div>
+        <div class="memo-content">\${m.current_solutions.alternatives}</div>
       </div>
 
       <div class="memo-section">
         <div class="memo-label">08 & 09 // UPSIDE</div>
         <div class="memo-title">Monetisation & Market Economics</div>
-        <div class="memo-verdict ${getVerdictClass(m.monetisation_logic.verdict)}">${m.monetisation_logic.verdict}</div>
-        <div class="memo-content" style="margin-bottom: 1.5rem;"><strong>Value Extraction:</strong> ${m.monetisation_logic.upside}</div>
-        <div class="memo-content"><strong>Market Read:</strong> ${m.market_size_bottom_up}</div>
+        <div class="memo-verdict \${getVerdictClass(m.monetisation_logic.verdict)}">\${m.monetisation_logic.verdict}</div>
+        <div class="memo-content" style="margin-bottom: 1.5rem;"><strong>Value Extraction:</strong> \${m.monetisation_logic.upside}</div>
+        <div class="memo-content"><strong>Market Read:</strong> \${m.market_size_bottom_up}</div>
       </div>
 
       <div class="memo-section">
         <div class="memo-label">10 // PROFITABILITY</div>
         <div class="memo-title">Unit Economics & CM2/CM3</div>
-        <div class="memo-verdict ${getVerdictClass(m.unit_economics_read.verdict)}">${m.unit_economics_read.verdict}</div>
-        <div class="memo-content">${m.unit_economics_read.logic}</div>
+        <div class="memo-verdict \${getVerdictClass(m.unit_economics_read.verdict)}">\${m.unit_economics_read.verdict}</div>
+        <div class="memo-content">\${m.unit_economics_read.logic}</div>
       </div>
 
       <div class="memo-section">
         <div class="memo-label">11 & 12 // DEFENSE</div>
         <div class="memo-title">Moat & Structural Hardness</div>
-        <div class="memo-verdict ${getVerdictClass(m.defensibility_stack.verdict)}">${m.defensibility_stack.verdict}</div>
-        <div class="memo-content">${m.defensibility_stack.moat_details}</div>
+        <div class="memo-verdict \${getVerdictClass(m.defensibility_stack.verdict)}">\${m.defensibility_stack.verdict}</div>
+        <div class="memo-content">\${m.defensibility_stack.moat_details}</div>
       </div>
 
       <div class="memo-section">
@@ -608,15 +610,23 @@ function renderReport(data) {
         <table class="memo-table">
           <thead><tr><th>STRUCTURAL GAP</th><th>OPERATOR FIX</th></tr></thead>
           <tbody>
-            ${m.gaps_table.map(g => `<tr><td style="color:var(--danger); font-weight:600;">${g.gap}</td><td style="color:var(--accent);">${g.fix}</td></tr>`).join('')}
+            \${m.gaps_table.map(g => `<tr><td style="color:var(--danger); font-weight:600;">\${g.gap}</td><td style="color:var(--accent);">\${g.fix}</td></tr>`).join('')}
           </tbody>
         </table>
+      </div>
+
+      <div class="memo-section">
+        <div class="memo-label">14 // SOURCES</div>
+        <div class="memo-title">References & Data Points</div>
+        <ul class="memo-list">
+          \${(m.references || []).map(ref => `<li><a href="\${ref}" target="_blank" style="color:var(--accent); text-decoration:none; word-break:break-all;">\${ref}</a></li>`).join('')}
+        </ul>
       </div>
 
       <div class="memo-section" style="background: var(--surface); padding: 3rem; border-radius: 16px; margin-top: 4rem; border: 1px solid var(--border-strong);">
         <div class="memo-label" style="color: var(--accent);">EXECUTIVE SUMMARY</div>
         <div class="memo-title">Final Verdict</div>
-        <div class="memo-content" style="font-weight: 500; font-size: 1.25rem; line-height: 1.4;">${m.final_verdict}</div>
+        <div class="memo-content" style="font-weight: 500; font-size: 1.25rem; line-height: 1.4;">\${m.final_verdict}</div>
       </div>
 
       <div style="margin-top: 4rem; padding-bottom: 6rem; text-align: center;">
