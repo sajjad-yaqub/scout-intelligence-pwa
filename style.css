@@ -328,3 +328,91 @@ input[type="text"]:focus {
   .memo-header h1 { font-size: 3rem; }
   #app { padding: 0 1.5rem; }
 }
+
+/* ==========================================================================
+   DEDICATED PDF EXPORT LAYOUT & STYLING
+   Forces black-on-white text rendering to avoid blank/white-on-white outputs.
+   ========================================================================== */
+.hidden-pdf-content {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  width: 800px; /* Letter-width scale */
+  background: #ffffff !important;
+  padding: 40px;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+/* Force black text on all PDF template descendants during PDF capture */
+.hidden-pdf-content,
+.hidden-pdf-content * {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  border-color: #e0e0e0 !important;
+}
+
+.pdf-exporting .hidden-pdf-content {
+  position: static;
+  display: block !important;
+}
+
+.pdf-header-compact {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 2px solid #000000 !important;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.pdf-header-compact h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 24pt;
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.pdf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.pdf-item {
+  margin-bottom: 15px;
+  border-bottom: 0.5pt solid #eee !important;
+  padding-bottom: 10px;
+}
+
+.pdf-item-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7pt;
+  text-transform: uppercase;
+  color: #666666 !important;
+  margin-bottom: 4pt;
+  letter-spacing: 0.1em;
+}
+
+.pdf-item-content {
+  font-size: 8.5pt;
+  line-height: 1.4;
+}
+
+.pdf-verdict-inline {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 7.5pt;
+  margin-right: 5pt;
+}
+
+.pdf-gaps-table {
+  width: 100%;
+  font-size: 7.5pt;
+  border-collapse: collapse;
+}
+
+.pdf-gaps-table td {
+  padding: 6pt 4pt;
+  border-top: 0.5pt solid #eee !important;
+}
+
