@@ -351,8 +351,9 @@ input[type="text"]:focus {
   border-color: #e0e0e0 !important;
 }
 
-.pdf-exporting .hidden-pdf-content {
-  position: static;
+.pdf-exporting .hidden-pdf-content,
+.hidden-pdf-content.pdf-exporting {
+  position: static !important;
   display: block !important;
 }
 

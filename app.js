@@ -252,6 +252,7 @@ function handleDownloadPDF() {
     <div style="font-size:0.5rem; color:#aaa; margin-top:0.5rem; text-align:center;">SCOUT INTELLIGENCE // OPERATOR MEMO // CONFIDENTIAL</div>
   `;
 
+  template.classList.add('pdf-exporting');
   document.body.classList.add('pdf-exporting');
 
   const opt = {
@@ -263,6 +264,7 @@ function handleDownloadPDF() {
   };
 
   html2pdf().set(opt).from(template).save().then(() => {
+    template.classList.remove('pdf-exporting');
     document.body.classList.remove('pdf-exporting');
   });
 }
