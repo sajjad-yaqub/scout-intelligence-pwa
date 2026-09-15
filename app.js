@@ -3,6 +3,9 @@
  * v16.16: Premium Minimalist Overhaul.
  */
 
+// Model with the highest rate limit (70,000 TPM)
+const DEFAULT_MODEL = "groq/compound";
+
 const SYSTEM_PROMPT = `You are a sharp operator and investor who has seen hundreds of pitches. 
 You think from first principles. You are blunt. You do not hedge.
 
@@ -388,7 +391,7 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
 
     updateLoadingStep('Generating deep-pillar hunt query...');
     const huntResponse = await callProxy('analyse', {
-      model: "llama-3.1-8b-instant",
+      model: DEFAULT_MODEL,
       messages: [
         { role: "system", content: "You are a sharp analyst. Generate ONE search query to uncover: 1. Specific Unit Economics/Pricing 2. Flywheel evidence 3. Real switching costs/lock-in. Output ONLY the query." },
         { role: "user", content: baseContext.substring(0, 5000) }
@@ -417,7 +420,7 @@ async function startOptimizedAnalysis(query, selectedIndex, originalContext) {
 
     updateLoadingStep('Writing Operator Memo with Citations...');
     const finalResponse = await callProxy('analyse', {
-      model: "llama-3.3-70b-versatile",
+      model: DEFAULT_MODEL,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: researchContext.substring(0, 20000) }
@@ -608,7 +611,7 @@ async function handleGenerateOutreach() {
 
   try {
     const response = await callProxy('analyse', {
-      model: "llama-3.3-70b-versatile",
+      model: DEFAULT_MODEL,
       messages: [
         { role: "system", content: OUTREACH_PROMPT },
         { role: "user", content: `COMPANY MEMO:\n${JSON.stringify(currentReport)}\n\nRESUME:\n${resume}` }
