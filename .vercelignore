@@ -1,0 +1,12 @@
+# Retained original PWA files are not part of the TanStack Start deployment.
+index.html
+app.js
+style.css
+server.py
+api/
+sw.js
+manifest.json
+icons/
+.lovable/
+.site-import/
+.oj-cache/
