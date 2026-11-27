@@ -1,20 +1,24 @@
-# Scout Intelligence PWA
+# ScoutEar Sound Finder
 
-A production-ready Progressive Web App for deep company research using the Gemini API.
+Imported website: https://scoutear.vercel.app
 
-## Features
-- **Brutal Operator Analysis:** 13-step structured teardown framework.
-- **PWA Support:** Install to home screen, offline shell caching.
-- **Visual Dashboard:** TLDR-first reports with color-coded scorecards.
-- **History:** Stores last 5 searches locally.
+This project was built with [Lovable](https://lovable.dev).
 
-## Setup
-1. Clone the repo.
-2. Add your Gemini API key to `app.js`.
-3. Serve with any static web server.
+## Build with Lovable
 
-## Technologies
-- Vanilla HTML/CSS/JS
-- Gemini API (AI reasoning)
-- Tavily Search (AI-native search)
-- Service Workers (PWA)
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/660dfb1e-04f6-425b-a955-710c90327791).
+
+- **Ship faster**: describe what you want to build and Lovable handles the code.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+
+## Development
+
+Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+
+```sh
+git clone <this-repository-url>
+cd <repository-name>
+npm i
+npm run dev
+```
