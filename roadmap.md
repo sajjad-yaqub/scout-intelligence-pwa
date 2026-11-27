@@ -1,0 +1,7 @@
+- [x] Capture Scout's public page and downloaded fonts.
+- [x] Compare desktop and phone layouts and restore the context toggle.
+- [x] Replace Scout's AI with a suitable Lovable AI model.
+- [x] Restore and verify company research, target selection, reports, PDF export, recent intelligence, and outreach using the supplied repository on desktop and phone.
+- [ ] Verify compatibility for external callers of the old /api/scout and legacy /teardown endpoints before replacing the original deployment. Blocked: no external caller inventory is available.
+- [x] One-page visual PDF summary
+- [x] Upload resume as PDF for outreach
