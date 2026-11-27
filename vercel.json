@@ -3,5 +3,11 @@
   "framework": null,
   "installCommand": "bun install --frozen-lockfile",
   "buildCommand": "bun run build",
-  "outputDirectory": ".vercel/output"
+  "outputDirectory": ".vercel/output",
+  "rewrites": [
+    {
+      "source": "/_serverFn/:path*",
+      "destination": "https://scout-ear-sound-finder.lovable.app/_serverFn/:path*"
+    }
+  ]
 }
