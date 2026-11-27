@@ -1,13 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "bun install --frozen-lockfile",
-  "buildCommand": "bun run build",
-  "outputDirectory": ".vercel/output",
+  "installCommand": "echo 'Scout is served by the published Lovable app'",
+  "buildCommand": "mkdir -p .vercel-static",
+  "outputDirectory": ".vercel-static",
   "rewrites": [
     {
-      "source": "/_serverFn/:path*",
-      "destination": "https://scout-ear-sound-finder.lovable.app/_serverFn/:path*"
+      "source": "/:path*",
+      "destination": "https://scout-ear-sound-finder.lovable.app/:path*"
     }
   ]
 }
