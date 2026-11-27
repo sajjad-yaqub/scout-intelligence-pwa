@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "echo 'Scout is served by the published Lovable app'",
-  "buildCommand": "mkdir -p .vercel-static",
+  "buildCommand": "mkdir -p .vercel-static && printf 'Scout deployment ready' > .vercel-static/deployment-ready.txt",
   "outputDirectory": ".vercel-static",
   "rewrites": [
     {
